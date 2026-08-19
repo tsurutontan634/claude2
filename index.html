@@ -1,0 +1,1878 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>初任給コンパス</title>
+<meta name="description" content="就活生・新社会人のための給料シミュレーター。年収から手取り・税金・社会保険を概算し、昇進を織り込んだ数年間の家計や、社宅・住宅手当・残業まで含めた企業の実質比較ができます。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+/* ---------- tokens ---------- */
+:root{
+  color-scheme:light;
+  --bg:#f4f6f1;
+  --surface:#ffffff;
+  --surface-2:#ebeee5;
+  --surface-3:#f7f8f4;
+  --ink:#1b1e18;
+  --ink-2:#585d50;
+  --muted:#84897b;
+  --line:#e2e5da;
+  --line-strong:#c9cdbf;
+  --accent:#0c6b52;
+  --accent-deep:#09523f;
+  --accent-ink:#ffffff;
+  --accent-soft:#e2efe8;
+  --focus:#2a78d6;
+  --keep:#1baf7a;          /* データ: 手取り・貯蓄 */
+  --si:#2a78d6;            /* データ: 社会保険 */
+  --itax:#eb6834;          /* データ: 所得税・支出 */
+  --rtax:#4a3aa7;          /* データ: 住民税 */
+  --neg:#e34948;           /* データ: マイナス */
+  --chart-context:#898781; /* 文脈系列(額面) */
+  --good-text:#006300;
+  --bad-text:#b3261e;
+  --warn-bg:#fdf1e6;
+  --warn-border:#ec835a;
+  --grid:#e6e8df;
+  --axis:#c3c6b8;
+  --stamp:#c73e3a;
+  --shadow:0 1px 2px rgba(27,30,24,.05),0 10px 28px rgba(27,30,24,.07);
+  --radius-card:14px;
+  --radius-ctl:9px;
+  --font-display:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Noto Sans JP",sans-serif;
+  --font-body:"Noto Sans JP",system-ui,-apple-system,"Hiragino Sans","Yu Gothic UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0f120d;
+    --surface:#191c17;
+    --surface-2:#232720;
+    --surface-3:#1e221b;
+    --ink:#eef0e8;
+    --ink-2:#b7bcab;
+    --muted:#8b9081;
+    --line:#2a2e26;
+    --line-strong:#3c4136;
+    --accent:#3aa07e;
+    --accent-deep:#2c8365;
+    --accent-ink:#08130d;
+    --accent-soft:#1b2f26;
+    --keep:#199e70;
+    --si:#3987e5;
+    --itax:#d95926;
+    --rtax:#9085e9;
+    --neg:#e66767;
+    --chart-context:#898781;
+    --good-text:#0ca30c;
+    --bad-text:#ff8f88;
+    --warn-bg:#2c211a;
+    --warn-border:#ec835a;
+    --grid:#262a22;
+    --axis:#3c4136;
+    --stamp:#e05d55;
+    --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0f120d;
+  --surface:#191c17;
+  --surface-2:#232720;
+  --surface-3:#1e221b;
+  --ink:#eef0e8;
+  --ink-2:#b7bcab;
+  --muted:#8b9081;
+  --line:#2a2e26;
+  --line-strong:#3c4136;
+  --accent:#3aa07e;
+  --accent-deep:#2c8365;
+  --accent-ink:#08130d;
+  --accent-soft:#1b2f26;
+  --keep:#199e70;
+  --si:#3987e5;
+  --itax:#d95926;
+  --rtax:#9085e9;
+  --neg:#e66767;
+  --chart-context:#898781;
+  --good-text:#0ca30c;
+  --bad-text:#ff8f88;
+  --warn-bg:#2c211a;
+  --warn-border:#ec835a;
+  --grid:#262a22;
+  --axis:#3c4136;
+  --stamp:#e05d55;
+  --shadow:none;
+}
+
+/* ---------- base ---------- */
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--font-body);
+  background:var(--bg);
+  color:var(--ink);
+  font-size:15px;
+  line-height:1.65;
+}
+img,svg{display:block;max-width:100%}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input,select{font:inherit;color:var(--ink)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:4px}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition:none !important;animation:none !important}
+}
+.app{max-width:1140px;margin:0 auto;padding:0 20px 72px}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---------- header ---------- */
+.masthead{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:30px 0 18px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:14px}
+.brand-mark{width:44px;height:44px;flex:none;color:var(--accent)}
+.brand h1{font-family:var(--font-display);font-weight:900;font-size:27px;letter-spacing:.02em;line-height:1.2}
+.tagline{color:var(--ink-2);font-size:13px;margin-top:2px}
+.head-actions{display:flex;align-items:center;gap:10px;padding-bottom:4px}
+.pill-note{font-size:11.5px;color:var(--ink-2);background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:4px 11px;white-space:nowrap}
+.theme-btn{display:flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 13px;font-size:12.5px;color:var(--ink-2);transition:border-color .15s}
+.theme-btn:hover{border-color:var(--line-strong)}
+.theme-btn svg{width:15px;height:15px}
+
+/* ---------- tabs ---------- */
+.tabs{display:flex;gap:5px;background:var(--surface-2);border:1px solid var(--line);padding:5px;border-radius:13px;width:max-content;margin:6px 0 26px}
+.tab{padding:9px 20px;border-radius:9px;font-weight:700;font-size:14.5px;color:var(--ink-2);font-family:var(--font-display);transition:background .15s,color .15s}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{background:var(--surface);color:var(--accent);box-shadow:var(--shadow)}
+@media (max-width:640px){
+  .tabs{width:100%}
+  .tab{flex:1;padding:9px 6px;font-size:13px;text-align:center}
+}
+
+/* ---------- layout ---------- */
+.panel-lead{color:var(--ink-2);font-size:13.5px;margin:-12px 0 20px}
+.layout{display:grid;grid-template-columns:396px minmax(0,1fr);gap:22px;align-items:start}
+.col{display:grid;gap:18px;min-width:0}
+@media (max-width:960px){.layout{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-card);padding:20px 22px;box-shadow:var(--shadow);position:relative;min-width:0}
+.card h2{font-family:var(--font-display);font-weight:700;font-size:16.5px;margin-bottom:14px;display:flex;align-items:baseline;gap:8px}
+.card h2 .sub{font-family:var(--font-body);font-weight:400;font-size:12px;color:var(--muted)}
+.card h3{font-family:var(--font-display);font-weight:700;font-size:14px;margin:18px 0 10px;color:var(--ink-2)}
+.hint{font-size:12px;color:var(--muted);line-height:1.6}
+
+/* ---------- form controls ---------- */
+.field{margin-bottom:16px}
+.field:last-child{margin-bottom:0}
+.field-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:6px}
+label.lbl,.lbl{font-weight:700;font-size:13.5px;color:var(--ink)}
+.field-val{font-weight:700;font-size:13.5px;color:var(--accent);white-space:nowrap}
+.unit-input{display:flex;align-items:center;gap:8px}
+.unit-input input[type="number"]{width:110px;text-align:right}
+.unit-input .unit{color:var(--ink-2);font-size:13px}
+input[type="number"],input[type="text"],select{
+  background:var(--surface-3);border:1px solid var(--line);border-radius:var(--radius-ctl);
+  padding:8px 11px;font-size:14px;width:100%;transition:border-color .15s;
+}
+input[type="number"]:hover,input[type="text"]:hover,select:hover{border-color:var(--line-strong)}
+input[type="number"]:focus,input[type="text"]:focus,select:focus{border-color:var(--accent);outline:none}
+select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 16px) 55%,calc(100% - 11px) 55%;background-size:5px 5px;background-repeat:no-repeat;padding-right:30px}
+input[type="range"]{
+  -webkit-appearance:none;appearance:none;width:100%;height:26px;background:transparent;margin-top:2px;
+}
+input[type="range"]::-webkit-slider-runnable-track{height:6px;border-radius:999px;background:linear-gradient(to right,var(--accent) 0 var(--fill,50%),var(--surface-2) var(--fill,50%) 100%);border:1px solid var(--line)}
+input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--surface);border:2.5px solid var(--accent);margin-top:-8px;box-shadow:0 1px 3px rgba(0,0,0,.18)}
+input[type="range"]::-moz-range-track{height:6px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line)}
+input[type="range"]::-moz-range-progress{height:6px;border-radius:999px;background:var(--accent)}
+input[type="range"]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;background:var(--surface);border:2.5px solid var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{border:1px solid var(--line);background:var(--surface-3);border-radius:999px;padding:6px 14px;font-size:13px;font-weight:500;color:var(--ink-2);transition:all .15s}
+.chip:hover{border-color:var(--line-strong)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.subfields{background:var(--surface-3);border:1px solid var(--line);border-radius:10px;padding:13px 14px;margin-top:10px}
+.subfields .field{margin-bottom:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+@media (max-width:420px){.grid2{grid-template-columns:1fr}}
+details.adv{border-top:1px dashed var(--line);margin-top:16px;padding-top:12px}
+details.adv summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--ink-2);list-style:none;display:flex;align-items:center;gap:6px}
+details.adv summary::before{content:"▸";font-size:11px;transition:transform .15s}
+details.adv[open] summary::before{transform:rotate(90deg)}
+details.adv summary::-webkit-details-marker{display:none}
+details.adv .adv-body{margin-top:12px}
+.btn{display:inline-flex;align-items:center;gap:6px;border-radius:var(--radius-ctl);padding:8px 16px;font-weight:700;font-size:13.5px;transition:all .15s}
+.btn-primary{background:var(--accent);color:var(--accent-ink)}
+.btn-primary:hover{background:var(--accent-deep)}
+.btn-ghost{border:1px dashed var(--line-strong);color:var(--ink-2)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-x{width:30px;height:30px;border-radius:8px;color:var(--muted);display:grid;place-items:center;font-size:15px;flex:none}
+.btn-x:hover{background:var(--surface-2);color:var(--bad-text)}
+
+/* ---------- stats / hero ---------- */
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-card);padding:16px 18px;box-shadow:var(--shadow)}
+.stat .s-label{font-size:12.5px;font-weight:700;color:var(--ink-2);display:flex;align-items:center;gap:5px}
+.stat .s-value{font-size:29px;font-weight:900;letter-spacing:.01em;margin-top:3px;line-height:1.25}
+.stat .s-value .u{font-size:14px;font-weight:700;color:var(--ink-2);margin-left:2px}
+.stat .s-sub{font-size:12px;color:var(--muted);margin-top:3px}
+.stat.hero{background:linear-gradient(135deg,var(--accent),var(--accent-deep));border-color:transparent;color:var(--accent-ink)}
+.stat.hero .s-label,.stat.hero .s-sub{color:var(--accent-ink);opacity:.85}
+.stat.hero .s-value{font-size:38px}
+.stat.hero .s-value .u{color:var(--accent-ink);opacity:.85}
+.delta-up{color:var(--good-text);font-weight:700}
+.delta-down{color:var(--bad-text);font-weight:700}
+
+/* ---------- payslip ---------- */
+.payslip{position:relative}
+.stamp{position:absolute;top:16px;right:18px;width:56px;height:56px;border:2.5px solid var(--stamp);color:var(--stamp);border-radius:50%;display:grid;place-items:center;font-family:var(--font-display);font-weight:700;font-size:14.5px;letter-spacing:.12em;transform:rotate(-8deg);opacity:.7;user-select:none;pointer-events:none}
+.ps-section{font-size:11.5px;font-weight:700;color:var(--muted);letter-spacing:.14em;margin:14px 0 2px}
+.ps-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:7px 2px;border-bottom:1px dashed var(--line)}
+.ps-row .ps-l{font-size:13.5px;color:var(--ink-2);display:flex;align-items:center;gap:6px}
+.ps-row .ps-r{text-align:right;white-space:nowrap}
+.ps-row .ps-r .yen{font-weight:700;font-size:14.5px}
+.ps-row .ps-r .per-m{font-size:11px;color:var(--muted);margin-left:6px}
+.ps-row.ps-total{border-bottom:none;border-top:2px solid var(--line-strong);margin-top:2px;padding-top:10px}
+.ps-row.ps-total .ps-l{font-weight:900;color:var(--ink);font-size:14.5px}
+.ps-row.ps-total .ps-r .yen{font-size:19px;font-weight:900}
+@media (max-width:520px){
+  .ps-row{flex-direction:column;align-items:stretch;gap:1px}
+  .ps-row .ps-r{text-align:right}
+}
+.promo-item{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--surface-3);border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin-bottom:8px}
+.ps-swatch{width:9px;height:9px;border-radius:3px;flex:none}
+
+/* ---------- charts ---------- */
+.chart-wrap{margin-top:6px}
+.chart-svg{width:100%;height:auto}
+.chart-svg text{font-family:var(--font-body)}
+.bar-seg{transition:opacity .12s;cursor:default}
+.bar-seg:hover{opacity:.82}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:12px}
+.legend .lg-item{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-2)}
+.legend .lg-swatch{width:11px;height:11px;border-radius:3.5px;flex:none}
+.legend .lg-line{width:16px;height:0;border-top:2.5px solid;border-radius:2px;flex:none}
+.legend .lg-val{font-weight:700;color:var(--ink)}
+.chart-title{font-size:13px;font-weight:700;color:var(--ink-2);margin:16px 0 4px;display:flex;align-items:center;gap:6px}
+.chart-note{font-size:11.5px;color:var(--muted);margin-top:6px}
+
+/* budget bars */
+.bud-row{display:grid;grid-template-columns:110px 1fr 84px;align-items:center;gap:10px;padding:5px 0}
+.bud-label{font-size:12.5px;color:var(--ink-2)}
+.bud-track{height:14px;background:var(--surface-2);border-radius:0 5px 5px 0;position:relative;overflow:hidden}
+.bud-fill{position:absolute;inset:0 auto 0 0;background:var(--itax);border-radius:0 4px 4px 0;min-width:2px}
+.bud-val{font-size:12.5px;font-weight:700;text-align:right;white-space:nowrap}
+.bud-sum{display:flex;justify-content:space-between;align-items:baseline;border-top:2px solid var(--line-strong);margin-top:10px;padding-top:10px;font-weight:700;font-size:14px;gap:10px;flex-wrap:wrap}
+
+/* comparison bars */
+.cmp-bar-row{display:grid;grid-template-columns:96px 1fr;align-items:center;gap:10px;padding:6px 0}
+.cmp-bar-name{font-size:13px;font-weight:700;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cmp-bar-track{position:relative;height:22px}
+.cmp-bar-fill{position:absolute;inset:0 auto 0 0;background:var(--keep);border-radius:0 5px 5px 0;min-width:2px}
+.cmp-bar-val{position:absolute;top:50%;transform:translateY(-50%);font-size:12.5px;font-weight:700;white-space:nowrap}
+
+/* ---------- tables ---------- */
+.table-scroll{overflow-x:auto;margin-top:8px;border:1px solid var(--line);border-radius:10px}
+table.data{border-collapse:collapse;width:100%;font-size:12.5px;min-width:540px}
+table.data th,table.data td{padding:7px 9px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+table.data th{font-size:12px;color:var(--ink-2);font-weight:700;background:var(--surface-3);position:sticky;top:0}
+table.data th:first-child,table.data td:first-child{text-align:left;position:sticky;left:0;background:var(--surface)}
+table.data th:first-child{background:var(--surface-3)}
+table.data tr:last-child td{border-bottom:none}
+table.data td{color:var(--ink-2)}
+table.data td.strong{color:var(--ink);font-weight:700}
+table.data tr.promo-row td{background:var(--accent-soft)}
+table.data tr.promo-row td:first-child{background:var(--accent-soft)}
+.badge{display:inline-block;font-size:10.5px;font-weight:700;color:var(--accent);border:1px solid var(--accent);border-radius:5px;padding:0 5px;margin-left:6px;vertical-align:1px}
+td.best{background:var(--accent-soft) !important;color:var(--accent-deep) !important;font-weight:900}
+td.best::before{content:"✓ ";font-weight:900}
+tr.hero-metric td{font-size:14px;border-top:2px solid var(--line-strong)}
+tr.hero-metric td:first-child{font-weight:900;color:var(--ink)}
+
+/* ---------- callouts ---------- */
+.callout{border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;padding:12px 16px;font-size:13.5px;margin-top:14px}
+.callout.warn{border-left-color:var(--warn-border);background:var(--warn-bg)}
+.callout strong{font-weight:900}
+.callout .co-title{display:flex;gap:7px;align-items:center;font-weight:900;font-family:var(--font-display);margin-bottom:3px}
+
+/* ---------- terms / tooltip ---------- */
+.tip{border-bottom:1.5px dotted var(--muted);cursor:help;text-decoration:none;color:inherit}
+#tooltip{
+  position:fixed;z-index:99;max-width:290px;background:var(--ink);color:var(--bg);
+  border-radius:9px;padding:9px 12px;font-size:12.5px;line-height:1.55;box-shadow:0 6px 24px rgba(0,0,0,.25);
+  pointer-events:none;
+}
+#tooltip .tt-title{font-weight:900;margin-bottom:2px}
+#tooltip .tt-row{display:flex;align-items:center;gap:7px;justify-content:space-between}
+#tooltip .tt-row .k{display:flex;align-items:center;gap:6px;opacity:.85}
+#tooltip .tt-row .v{font-weight:900}
+#tooltip .tt-key{width:12px;height:0;border-top:2.5px solid;border-radius:2px;flex:none}
+
+/* ---------- quick table / misc ---------- */
+.quick details summary{cursor:pointer;font-weight:700;font-size:13.5px;color:var(--accent)}
+.footer{border-top:1px solid var(--line);margin-top:44px;padding-top:20px;color:var(--muted);font-size:11.5px;line-height:1.8}
+.footer h2{font-size:12.5px;font-weight:900;color:var(--ink-2);margin-bottom:6px;font-family:var(--font-display)}
+.footer ul{padding-left:18px;margin:4px 0 12px}
+.footer .foot-actions{margin-top:10px}
+.link-btn{color:var(--accent);font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.company-card .cc-head{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.company-card .cc-head input[type="text"]{font-weight:900;font-size:16px;font-family:var(--font-display);background:transparent;border:none;border-bottom:2px solid var(--line);border-radius:0;padding:2px 4px}
+.company-card .cc-head input[type="text"]:focus{border-bottom-color:var(--accent)}
+.cc-color{width:10px;height:22px;border-radius:4px;flex:none;background:var(--accent)}
+.add-card{display:grid;place-items:center;min-height:120px;border:1.5px dashed var(--line-strong);border-radius:var(--radius-card);color:var(--ink-2);font-weight:700;transition:all .15s;cursor:pointer;background:none;width:100%}
+.add-card:hover{border-color:var(--accent);color:var(--accent)}
+.cards-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;align-items:start}
+.mini-note{font-size:12px;color:var(--muted);margin-top:8px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="app">
+
+<header class="masthead">
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 44 44" fill="none" aria-hidden="true">
+      <circle cx="22" cy="22" r="19" stroke="currentColor" stroke-width="2.6"/>
+      <path d="M22 5.5v4M22 34.5v4M5.5 22h4M34.5 22h4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M28.5 15.5 24 24l-8.5 4.5L20 20z" fill="currentColor"/>
+      <circle cx="22" cy="22" r="2" fill="var(--bg)"/>
+    </svg>
+    <div>
+      <h1>初任給コンパス</h1>
+      <p class="tagline">年収から手取り・生活・キャリアまで。就職を考える学生のためのお金シミュレーター</p>
+    </div>
+  </div>
+  <div class="head-actions">
+    <span class="pill-note">令和7年度の税・保険料率で概算</span>
+    <button class="theme-btn" id="themeBtn" aria-live="polite"></button>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="シミュレーションの種類">
+  <button class="tab" role="tab" id="tab-simple" aria-controls="panel-simple" aria-selected="true">かんたん</button>
+  <button class="tab" role="tab" id="tab-deep" aria-controls="panel-deep" aria-selected="false">じっくり</button>
+  <button class="tab" role="tab" id="tab-comp" aria-controls="panel-comp" aria-selected="false">企業くらべ</button>
+</nav>
+
+<main>
+
+<!-- ================= かんたん ================= -->
+<section id="panel-simple" role="tabpanel" aria-labelledby="tab-simple">
+  <p class="panel-lead">年収を入れるだけで、<span class="tip" data-tip="税金や社会保険料が引かれる前の給与総額のこと。求人票の「想定年収」はだいたいこれ。">額面</span>から<span class="tip" data-tip="額面から税金・社会保険料を引いた、実際に口座に振り込まれるお金。">手取り</span>がすぐわかります。</p>
+  <div class="layout">
+    <div class="col">
+      <div class="card">
+        <h2>年収を入力</h2>
+        <div class="field">
+          <div class="field-head">
+            <label class="lbl" for="s-annual">年収(額面)</label>
+          </div>
+          <div class="unit-input">
+            <input type="number" id="s-annual" min="100" max="3000" step="10" inputmode="numeric">
+            <span class="unit">万円</span>
+          </div>
+          <input type="range" id="s-annualRange" min="1000000" max="15000000" step="100000" aria-label="年収スライダー">
+        </div>
+        <div class="field">
+          <div class="field-head">
+            <label class="lbl" for="s-bonus">賞与(ボーナス)の割合</label>
+          </div>
+          <select id="s-bonus">
+            <option value="0">賞与なし(年収を12分割)</option>
+            <option value="2">年収のうち約2ヶ月分が賞与</option>
+            <option value="4">年収のうち約4ヶ月分が賞与</option>
+            <option value="6">年収のうち約6ヶ月分が賞与</option>
+          </select>
+          <p class="hint" style="margin-top:6px">月々の金額の見え方が変わります(年間の手取りはほぼ同じ)。</p>
+        </div>
+        <div class="callout" id="s-firstyear"></div>
+      </div>
+      <div class="card">
+        <h2>ひと月の目安 <span class="sub">手取りから逆算</span></h2>
+        <div id="s-guide"></div>
+        <p class="mini-note">家賃は「手取りの3分の1まで」が定番の目安。細かい生活費は「じっくり」タブでどうぞ。</p>
+        <p style="margin-top:10px"><button class="btn btn-primary" id="s-toDeep">じっくりシミュレーションする →</button></p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="stat-row">
+        <div class="stat hero">
+          <div class="s-label">手取り年収(概算)</div>
+          <div class="s-value" id="s-hero-net"></div>
+          <div class="s-sub" id="s-hero-rate"></div>
+        </div>
+        <div class="stat">
+          <div class="s-label">月々の手取り</div>
+          <div class="s-value" id="s-hero-monthly"></div>
+          <div class="s-sub" id="s-hero-monthly-sub"></div>
+        </div>
+        <div class="stat">
+          <div class="s-label">賞与の手取り(年)</div>
+          <div class="s-value" id="s-hero-bonus"></div>
+          <div class="s-sub">賞与からも税・保険料は引かれます</div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>年収のゆくえ</h2>
+        <div class="chart-wrap" id="s-chart"></div>
+        <div class="legend" id="s-legend"></div>
+      </div>
+      <div class="card payslip">
+        <div class="stamp" aria-hidden="true">概算</div>
+        <h2>給与明細(年間) <span class="sub">2年目以降のイメージ</span></h2>
+        <div id="s-payslip"></div>
+      </div>
+      <div class="card quick">
+        <details>
+          <summary>年収別の手取り早見表を開く</summary>
+          <div class="table-scroll">
+            <table class="data">
+              <thead><tr><th>年収(額面)</th><th>手取り(年)</th><th>手取り率</th><th>月々の手取り</th><th>税・社会保険(年)</th></tr></thead>
+              <tbody id="s-quicktable"></tbody>
+            </table>
+          </div>
+          <p class="chart-note">賞与の設定・単身・40歳未満で計算した概算です。</p>
+        </details>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= じっくり ================= -->
+<section id="panel-deep" role="tabpanel" aria-labelledby="tab-deep" hidden>
+  <p class="panel-lead">月給・昇給・住まい・生活費を決めると、<strong>数年先までの家計と貯蓄</strong>が見えます。1年目に住民税がかからないことも織り込み済み。</p>
+  <div class="layout">
+    <div class="col">
+      <div class="card">
+        <h2>給料とキャリア</h2>
+        <div class="field">
+          <div class="field-head"><label class="lbl" for="d-monthly">月給(基本給)</label></div>
+          <div class="unit-input">
+            <input type="number" id="d-monthly" min="10" max="200" step="0.5" inputmode="decimal">
+            <span class="unit">万円</span>
+          </div>
+          <input type="range" id="d-monthlyRange" min="150000" max="600000" step="5000" aria-label="月給スライダー">
+        </div>
+        <div class="grid2">
+          <div class="field">
+            <div class="field-head"><label class="lbl" for="d-bonusR">賞与(年間)</label><span class="field-val" id="d-bonusVal"></span></div>
+            <input type="range" id="d-bonusR" min="0" max="6" step="0.5">
+          </div>
+          <div class="field">
+            <div class="field-head"><label class="lbl" for="d-raiseR">昇給率(毎年)</label><span class="field-val" id="d-raiseVal"></span></div>
+            <input type="range" id="d-raiseR" min="0" max="8" step="0.1">
+          </div>
+          <div class="field">
+            <div class="field-head"><label class="lbl" for="d-otR"><span class="tip" data-tip="残業代は「月給÷160時間×1.25×残業時間」で概算しています(所定160時間・割増25%)。">残業(月平均)</span></label><span class="field-val" id="d-otVal"></span></div>
+            <input type="range" id="d-otR" min="0" max="60" step="5">
+          </div>
+          <div class="field">
+            <div class="field-head"><label class="lbl" for="d-otmode">残業代の支給</label></div>
+            <select id="d-otmode">
+              <option value="full">全額支給される</option>
+              <option value="fixed"><!-- みなし -->固定残業代込み(追加なし)</option>
+            </select>
+          </div>
+          <div class="field">
+            <div class="field-head"><label class="lbl" for="d-yearsR">何年分みる?</label><span class="field-val" id="d-yearsVal"></span></div>
+            <input type="range" id="d-yearsR" min="3" max="20" step="1">
+          </div>
+          <div class="field">
+            <div class="field-head"><label class="lbl" for="d-age">入社時の年齢</label></div>
+            <input type="number" id="d-age" min="18" max="40" step="1" inputmode="numeric">
+          </div>
+        </div>
+        <h3>昇進イベント <span class="tip" data-tip="「◯年目に役職が付いて月給が上がる」を再現します。昇進後もその金額を含めて毎年の昇給率がかかります。">?</span></h3>
+        <div id="d-promos"></div>
+        <button class="btn btn-ghost" id="d-addPromo">+ 昇進を追加</button>
+      </div>
+      <div class="card">
+        <h2>住まい</h2>
+        <div class="chips" id="d-housingChips" role="group" aria-label="住まいの形態"></div>
+        <div class="subfields" id="d-housingFields"></div>
+      </div>
+      <div class="card">
+        <h2>毎月の生活費 <span class="sub">住まい以外</span></h2>
+        <div id="d-living"></div>
+        <details class="adv">
+          <summary>くわしい設定(保険料率・iDeCo)</summary>
+          <div class="adv-body">
+            <div class="field">
+              <div class="field-head"><label class="lbl" for="d-health">健康保険料率(労使合計)</label></div>
+              <div class="unit-input">
+                <input type="number" id="d-health" min="8" max="12" step="0.01" inputmode="decimal">
+                <span class="unit">%</span>
+              </div>
+              <p class="hint" style="margin-top:6px">協会けんぽは都道府県で約9.3〜10.8%。初期値は東京(9.91%)。</p>
+            </div>
+            <div class="field">
+              <div class="field-head"><label class="lbl" for="d-ideco"><span class="tip" data-tip="個人型確定拠出年金。掛金が全額所得控除になり税金が安くなるが、原則60歳まで引き出せない。">iDeCo</span> 掛金(月)</label></div>
+              <div class="unit-input">
+                <input type="number" id="d-ideco" min="0" max="7" step="0.1" inputmode="decimal">
+                <span class="unit">万円</span>
+              </div>
+            </div>
+          </div>
+        </details>
+      </div>
+    </div>
+    <div class="col">
+      <div class="stat-row" id="d-stats"></div>
+      <div id="d-callouts"></div>
+      <div class="card">
+        <h2>月々のお金の流れ <span class="sub">1年目・賞与は含まず</span></h2>
+        <div id="d-budget"></div>
+      </div>
+      <div class="card">
+        <h2>年収と手取りの推移</h2>
+        <div class="chart-wrap" id="d-trend"></div>
+        <div class="legend" id="d-trendLegend"></div>
+        <div class="chart-title">貯蓄の積み上がり <span class="tip" data-tip="毎年の「手取り − 支出」を貯蓄として積み上げた金額。iDeCo掛金も貯蓄に含めています。">?</span></div>
+        <div class="chart-wrap" id="d-cum"></div>
+        <p class="chart-note" id="d-cumNote"></p>
+      </div>
+      <div class="card">
+        <h2>年次シミュレーション表</h2>
+        <div class="table-scroll">
+          <table class="data">
+            <thead><tr><th>年目</th><th>年齢</th><th>月給</th><th>額面年収</th><th>手取り</th><th>うち住民税</th><th>年間支出</th><th>年間収支</th><th>累計貯蓄</th></tr></thead>
+            <tbody id="d-yearTable"></tbody>
+          </table>
+        </div>
+        <p class="chart-note">住民税は前年の所得に対して翌年払うため、1年目は0円・2年目から発生します。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 企業くらべ ================= -->
+<section id="panel-comp" role="tabpanel" aria-labelledby="tab-comp" hidden>
+  <p class="panel-lead">額面が高い会社が「使えるお金」も多いとは限りません。<span class="tip" data-tip="会社が借りた物件に安く住める制度。家賃の大部分を会社が負担しても原則給与として課税されないため、同じ額の住宅手当(課税される)より断然おトク。">借り上げ社宅</span>・住宅手当・交通費・残業まで含めた「実質」で比べましょう。</p>
+  <div class="card" style="margin-bottom:16px">
+    <div class="field" style="max-width:420px;margin-bottom:0">
+      <div class="field-head"><label class="lbl" for="c-rent">共通の想定:住みたい部屋の家賃(月)</label><span class="field-val" id="c-rentVal"></span></div>
+      <input type="range" id="c-rent" min="30000" max="150000" step="5000">
+      <p class="hint" style="margin-top:6px">会社の住宅サポートがない場合、この家賃を全額自分で払う前提で比べます。</p>
+    </div>
+  </div>
+  <div class="cards-3" id="c-cards"></div>
+  <div id="c-callout"></div>
+  <div class="card" style="margin-top:16px">
+    <h2>実質比較表 <span class="sub">単身・2年目以降のイメージ</span></h2>
+    <div class="table-scroll">
+      <table class="data">
+        <thead id="c-thead"></thead>
+        <tbody id="c-tbody"></tbody>
+      </table>
+    </div>
+    <p class="chart-note">★「実質的に使えるお金」= 手取り − 住居の自己負担 − 通勤の自己負担 + 福利厚生の価値。<span class="tip" data-tip="実質的に使えるお金 ÷ 年間労働時間(所定160時間+残業)。「1時間はたらいて、生活に使えるお金がいくら残るか」。">実質時給</span>は時間あたりの豊かさの目安です。</p>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h2>実質的に使えるお金(年)</h2>
+    <div id="c-chart"></div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h2>なぜ「借り上げ社宅」は強い?</h2>
+    <p style="font-size:13.5px;color:var(--ink-2)">
+      住宅手当2万円は<strong>給料に上乗せ</strong>なので、税金と社会保険料が引かれて実質1.6万円ほどに目減りします。
+      一方、借り上げ社宅で会社が家賃を負担する分は<strong>原則課税されません</strong>。「家賃10万円の部屋に自己負担2万円で住める」なら、
+      課税されずに月8万円ぶん得をしているのと同じ。<strong>額面年収に出てこない差</strong>が、実質では年数十万円になることもあります。
+      求人票では「住宅手当の額」だけでなく「社宅制度の有無と自己負担」を確認するのがおすすめです。
+    </p>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <h2>計算の前提(ぜんぶ概算です)</h2>
+  <ul>
+    <li>社会保険:協会けんぽ(初期値は東京・令和7年度 9.91%)/厚生年金 18.3%/雇用保険 0.55%(本人負担分で計算、健保・年金は労使折半)。40〜64歳は介護保険 1.59% を加算。標準報酬月額の等級は簡略化し、月額そのまま(上限あり)で計算しています。</li>
+    <li>税金:令和7年度税制改正後の給与所得控除(最低65万円)・基礎控除(58万円、低所得は最大95万円 ※令和9年分以降の恒久ルール)で計算。復興特別所得税 2.1%、住民税は所得割10%+均等割・森林環境税 5,000円、調整控除 2,500円。単身・扶養なし・生命保険料控除等なしを想定しています。</li>
+    <li>住民税は前年所得に課税されるため、複数年シミュレーションでは1年目0円・2年目から前年ベースで計算。単年の表示は「2年目以降のイメージ」です。</li>
+    <li>通勤手当は月15万円まで非課税ですが、社会保険料の計算には含めています。借り上げ社宅は税法上の要件(賃貸料相当額など)を満たす前提の簡略計算です。</li>
+    <li>実際の金額は、健康保険組合・自治体・企業の制度により変わります。就活の意思決定の「目安」としてご利用ください。</li>
+  </ul>
+  <div class="foot-actions">
+    <button class="link-btn" id="resetBtn">入力をぜんぶリセット</button>
+    <span style="margin-left:14px">入力内容はこの端末(ブラウザ)にだけ保存されます。</span>
+  </div>
+</footer>
+
+</div>
+<div id="tooltip" hidden></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   初任給コンパス — 給料・手取り・生活シミュレーター
+   すべて概算。前提はページ下部の注記を参照。
+   ===================================================================== */
+
+/*ENGINE-START*/
+const TAXC = {
+  healthRateDefault: 0.0991,   // 協会けんぽ 東京 令和7年度(労使合計)
+  careRate: 0.0159,            // 介護保険 40〜64歳(労使合計)
+  pensionRate: 0.183,          // 厚生年金(労使合計)
+  empRate: 0.0055,             // 雇用保険 労働者負担
+  healthCapM: 1390000,         // 健保 標準報酬月額上限
+  pensionCapM: 650000,         // 厚年 標準報酬月額上限
+  healthBonusCapY: 5730000,    // 健保 標準賞与額 年間上限
+  pensionBonusCapPer: 1500000, // 厚年 標準賞与額 1回上限
+  scheduledHoursM: 160,        // 月の所定労働時間(残業単価計算用)
+};
+
+// 給与所得(収入 − 給与所得控除)。令和7年度改正後(最低65万円)
+function salaryIncome(income) {
+  let d;
+  if (income <= 1900000) d = 650000;
+  else if (income <= 3600000) d = income * 0.3 + 80000;
+  else if (income <= 6600000) d = income * 0.2 + 440000;
+  else if (income <= 8500000) d = income * 0.1 + 1100000;
+  else d = 1950000;
+  return Math.max(0, income - d);
+}
+
+// 基礎控除(所得税)。令和9年分以降の恒久ルール
+function basicDeductionIncome(totalIncome) {
+  if (totalIncome <= 1320000) return 950000;
+  if (totalIncome <= 23500000) return 580000;
+  if (totalIncome <= 24000000) return 480000;
+  if (totalIncome <= 24500000) return 320000;
+  if (totalIncome <= 25000000) return 160000;
+  return 0;
+}
+
+// 基礎控除(住民税)
+function basicDeductionResident(totalIncome) {
+  if (totalIncome <= 24000000) return 430000;
+  if (totalIncome <= 24500000) return 290000;
+  if (totalIncome <= 25000000) return 150000;
+  return 0;
+}
+
+// 所得税の超過累進(復興特別所得税は呼び出し側で)
+function progressiveTax(taxable) {
+  const brackets = [
+    [1950000, 0.05, 0], [3300000, 0.10, 97500], [6950000, 0.20, 427500],
+    [9000000, 0.23, 636000], [18000000, 0.33, 1536000],
+    [40000000, 0.40, 2796000], [Infinity, 0.45, 4796000],
+  ];
+  for (const [cap, rate, ded] of brackets) {
+    if (taxable <= cap) return taxable * rate - ded;
+  }
+}
+
+// 社会保険料(本人負担分)
+function calcSocialInsurance(o) {
+  const care = (o.age >= 40 && o.age < 65) ? TAXC.careRate : 0;
+  const hHalf = ((o.healthRate ?? TAXC.healthRateDefault) + care) / 2;
+  const pHalf = TAXC.pensionRate / 2;
+  const payments = o.bonusPayments ?? 2;
+  const bonusPer = payments > 0 ? o.bonusAnnual / payments : 0;
+  const health = Math.min(o.monthlySI, TAXC.healthCapM) * 12 * hHalf
+               + Math.min(o.bonusAnnual, TAXC.healthBonusCapY) * hHalf;
+  const pension = Math.min(o.monthlySI, TAXC.pensionCapM) * 12 * pHalf
+                + Math.min(bonusPer, TAXC.pensionBonusCapPer) * payments * pHalf;
+  const emp = o.grossForEmp * TAXC.empRate;
+  const r = { health: Math.round(health), pension: Math.round(pension), emp: Math.round(emp) };
+  r.total = r.health + r.pension + r.emp;
+  return r;
+}
+
+// 所得税(年)
+function calcIncomeTax(taxableGross, siTotal, idecoAnnual) {
+  const inc = salaryIncome(taxableGross);
+  const taxable = Math.floor(Math.max(0, inc - siTotal - (idecoAnnual || 0) - basicDeductionIncome(inc)) / 1000) * 1000;
+  if (taxable <= 0) return 0;
+  return Math.floor(progressiveTax(taxable) * 1.021 / 100) * 100;
+}
+
+// 住民税(年)— 引数は「前年」の課税対象収入と社保・iDeCo
+function calcResidentTax(taxableGross, siTotal, idecoAnnual) {
+  const inc = salaryIncome(taxableGross);
+  if (inc <= 450000) return 0; // 単身の非課税ライン(概算)
+  const taxable = Math.floor(Math.max(0, inc - siTotal - (idecoAnnual || 0) - basicDeductionResident(inc)) / 1000) * 1000;
+  const shotokuwari = Math.max(0, taxable * 0.10 - 2500);
+  return Math.floor((shotokuwari + 5000) / 100) * 100;
+}
+
+/**
+ * 1年分の給与計算。
+ * monthly: 月給(基本給) / bonusMonths: 賞与ヶ月数 / allowTaxableM: 課税される月額手当(住宅手当・残業代等)
+ * commuteM: 通勤手当(非課税・月) / age / healthRate(労使合計) / idecoM
+ * residentTaxOf: 'same'(同年所得で概算=定常状態) or 数値(前年計算済みの住民税額)
+ */
+function calcYear(p) {
+  const bonusAnnual = p.monthly * (p.bonusMonths || 0);
+  const taxableGross = (p.monthly + (p.allowTaxableM || 0)) * 12 + bonusAnnual;
+  const commuteY = (p.commuteM || 0) * 12;
+  const idecoY = (p.idecoM || 0) * 12;
+  const si = calcSocialInsurance({
+    monthlySI: p.monthly + (p.allowTaxableM || 0) + (p.commuteM || 0),
+    bonusAnnual,
+    bonusPayments: 2,
+    grossForEmp: taxableGross + commuteY,
+    age: p.age ?? 23,
+    healthRate: p.healthRate,
+  });
+  const incomeTax = calcIncomeTax(taxableGross, si.total, idecoY);
+  const residentTax = (p.residentTaxOf === 'same')
+    ? calcResidentTax(taxableGross, si.total, idecoY)
+    : Math.round(p.residentTaxOf || 0);
+  // 手取り(通勤手当は定期代に消える前提で除いて表示)
+  const net = Math.round(taxableGross - si.total - incomeTax - residentTax);
+  return { taxableGross, bonusAnnual, si, incomeTax, residentTax, net, idecoY };
+}
+
+// 月々の手取り(賞与を除く月ベースの概算): 控除を月給比で按分
+function monthlyNetOf(r, p) {
+  const monthlyPart = (p.monthly + (p.allowTaxableM || 0)) * 12 / Math.max(1, r.taxableGross);
+  const deductions = (r.si.total + r.incomeTax + r.residentTax) * monthlyPart;
+  return ((p.monthly + (p.allowTaxableM || 0)) * 12 - deductions) / 12;
+}
+
+/**
+ * 複数年シミュレーション。
+ * cfg: { monthly0, bonusMonths, raisePct, promotions:[{year,amount,label}], years, age0,
+ *        otH, otMode('full'|'fixed'), allowHousingM, healthRate, idecoM }
+ * 住民税: 1年目0円、以降は前年の所得から計算。
+ */
+function simulateYears(cfg) {
+  const rows = [];
+  let monthly = cfg.monthly0;
+  let prev = null;
+  for (let y = 1; y <= cfg.years; y++) {
+    if (y > 1) monthly *= 1 + (cfg.raisePct || 0) / 100;
+    const promo = (cfg.promotions || []).find(p => p.year === y);
+    if (promo) monthly += promo.amount;
+    const otPayM = cfg.otMode === 'full'
+      ? monthly / TAXC.scheduledHoursM * 1.25 * (cfg.otH || 0)
+      : 0;
+    const allowM = (cfg.allowHousingM || 0) + otPayM;
+    const residentTaxOf = (y === 1) ? 0
+      : calcResidentTax(prev.taxableGross, prev.si.total, prev.idecoY);
+    const r = calcYear({
+      monthly, bonusMonths: cfg.bonusMonths, allowTaxableM: allowM,
+      age: cfg.age0 + y - 1, healthRate: cfg.healthRate, idecoM: cfg.idecoM,
+      residentTaxOf,
+    });
+    rows.push({ year: y, age: cfg.age0 + y - 1, monthly, otPayM, promo: promo || null, ...r });
+    prev = r;
+  }
+  return rows;
+}
+/*ENGINE-END*/
+
+/* ---------------------------------------------------------------------
+   utilities
+--------------------------------------------------------------------- */
+const $ = id => document.getElementById(id);
+const round1 = v => Math.round(v * 10) / 10;
+const clampN = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+function fmtMan(yen, dp = 1) {
+  const man = yen / 10000;
+  const v = dp === 0 ? Math.round(man) : round1(man);
+  return v.toLocaleString('ja-JP', { maximumFractionDigits: dp }) + '万円';
+}
+function manNum(yen, dp = 1) {
+  const man = yen / 10000;
+  const v = dp === 0 ? Math.round(man) : round1(man);
+  return v.toLocaleString('ja-JP', { maximumFractionDigits: dp });
+}
+function fmtYen(yen) { return Math.round(yen).toLocaleString('ja-JP') + '円'; }
+function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+function h(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+const SVGNS = 'http://www.w3.org/2000/svg';
+function sv(tag, attrs) {
+  const e = document.createElementNS(SVGNS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  return e;
+}
+function niceTicks(min, max, n = 4) {
+  const span = (max - min) || 1;
+  const raw = span / n;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const norm = raw / mag;
+  const step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 2.5 ? 2.5 : norm <= 5 ? 5 : 10) * mag;
+  const ticks = [];
+  let v = Math.floor(min / step) * step;
+  while (v < max - step * 0.001) { ticks.push(Math.round(v * 100) / 100); v += step; }
+  ticks.push(Math.round(v * 100) / 100); // 最後の目盛りは必ず最大値以上
+  return ticks;
+}
+function setRangeFill(input) {
+  const min = +input.min || 0, max = +input.max || 100;
+  const pct = ((+input.value - min) / (max - min)) * 100;
+  input.style.setProperty('--fill', pct + '%');
+}
+
+/* ---------------------------------------------------------------------
+   state
+--------------------------------------------------------------------- */
+const STORAGE_KEY = 'shoninkyu-compass-v1';
+const DEFAULTS = {
+  theme: 'auto',
+  tab: 'simple',
+  simple: { annual: 3500000, bonusMonths: 2 },
+  deep: {
+    monthly: 230000, bonusMonths: 2, raisePct: 2.0, years: 10, age: 22,
+    otH: 10, otMode: 'full',
+    promotions: [
+      { year: 4, amount: 30000, label: '主任' },
+      { year: 8, amount: 50000, label: '係長' },
+    ],
+    housing: { mode: 'rent', rent: 70000, familyPay: 30000, allowance: 20000, selfPay: 20000 },
+    living: { food: 40000, util: 12000, comm: 8000, social: 30000, cloth: 15000, scholar: 0, other: 10000 },
+    healthRate: 9.91, ideco: 0,
+  },
+  comp: {
+    rent: 70000,
+    companies: [
+      { on: true, name: 'A社', monthly: 230000, bonusMonths: 4, raisePct: 2, otH: 20, otMode: 'full', housing: 'allowance', allowance: 20000, selfPay: 20000, commuteCost: 10000, commutePaid: true, perks: 0 },
+      { on: true, name: 'B社', monthly: 260000, bonusMonths: 2, raisePct: 2.5, otH: 30, otMode: 'fixed', housing: 'none', allowance: 20000, selfPay: 20000, commuteCost: 12000, commutePaid: false, perks: 0 },
+      { on: true, name: 'C社', monthly: 220000, bonusMonths: 4, raisePct: 2, otH: 10, otMode: 'full', housing: 'shataku', allowance: 20000, selfPay: 20000, commuteCost: 8000, commutePaid: true, perks: 10000 },
+    ],
+  },
+};
+function deepMerge(base, over) {
+  if (Array.isArray(base)) return Array.isArray(over) ? over : base;
+  if (typeof base === 'object' && base !== null) {
+    const out = { ...base };
+    if (typeof over === 'object' && over !== null) {
+      for (const k of Object.keys(base)) if (k in over) out[k] = deepMerge(base[k], over[k]);
+    }
+    return out;
+  }
+  return over !== undefined && typeof over === typeof base ? over : base;
+}
+let state;
+try {
+  state = deepMerge(structuredClone(DEFAULTS), JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'));
+} catch (e) { state = structuredClone(DEFAULTS); }
+const saveState = debounce(() => {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* private mode */ }
+}, 250);
+
+/* ---------------------------------------------------------------------
+   tooltip (charts + 用語)
+--------------------------------------------------------------------- */
+const tip = (() => {
+  const box = $('tooltip');
+  let visible = false;
+  function place(x, y) {
+    const pad = 12;
+    const r = box.getBoundingClientRect();
+    let left = x + 14, top = y + 16;
+    if (left + r.width + pad > innerWidth) left = x - r.width - 12;
+    if (top + r.height + pad > innerHeight) top = y - r.height - 12;
+    box.style.left = Math.max(pad, left) + 'px';
+    box.style.top = Math.max(pad, top) + 'px';
+  }
+  return {
+    show(builder, x, y) {
+      box.textContent = '';
+      builder(box);
+      box.hidden = false;
+      visible = true;
+      place(x, y);
+    },
+    move(x, y) { if (visible) place(x, y); },
+    hide() { box.hidden = true; visible = false; },
+  };
+})();
+function ttText(title, body) {
+  return box => {
+    if (title) box.appendChild(h('div', 'tt-title', title));
+    box.appendChild(h('div', null, body));
+  };
+}
+function ttRows(title, rows) {
+  return box => {
+    if (title) box.appendChild(h('div', 'tt-title', title));
+    for (const r of rows) {
+      const line = h('div', 'tt-row');
+      const k = h('span', 'k');
+      if (r.color) { const key = h('span', 'tt-key'); key.style.borderTopColor = r.color; k.appendChild(key); }
+      k.appendChild(h('span', null, r.label));
+      line.appendChild(k);
+      line.appendChild(h('span', 'v num', r.value));
+      box.appendChild(line);
+    }
+  };
+}
+// 用語ツールチップ(ホバー/タップ両対応)
+document.addEventListener('pointerover', e => {
+  const t = e.target.closest('.tip');
+  if (t) tip.show(ttText(null, t.dataset.tip), e.clientX, e.clientY);
+});
+document.addEventListener('pointerout', e => { if (e.target.closest('.tip')) tip.hide(); });
+document.addEventListener('click', e => {
+  const t = e.target.closest('.tip');
+  if (t) { tip.show(ttText(null, t.dataset.tip), e.clientX, e.clientY); e.preventDefault(); }
+  else if (!e.target.closest('#tooltip')) tip.hide();
+});
+
+/* ---------------------------------------------------------------------
+   charts
+--------------------------------------------------------------------- */
+const SERIES = {
+  keep: 'var(--keep)', si: 'var(--si)', itax: 'var(--itax)', rtax: 'var(--rtax)',
+  context: 'var(--chart-context)', neg: 'var(--neg)',
+};
+
+// 内訳の帯グラフ(積み上げ横棒・角丸クリップ・2pxサーフェスギャップ)
+function renderBreakdownBar(container, segments, total) {
+  container.textContent = '';
+  const W = 720, H = 26, GAP = 2;
+  const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart-svg', role: 'img', 'aria-label': '年収の内訳' });
+  const clipId = 'clip-' + container.id;
+  const defs = sv('defs', {});
+  const clip = sv('clipPath', { id: clipId });
+  clip.appendChild(sv('rect', { x: 0, y: 0, width: W, height: H, rx: 6, ry: 6 }));
+  defs.appendChild(clip);
+  svg.appendChild(defs);
+  const g = sv('g', { 'clip-path': `url(#${clipId})` });
+  let x = 0;
+  const usable = W - GAP * (segments.length - 1);
+  segments.forEach((s, i) => {
+    const w = Math.max(0, usable * (s.value / total));
+    const rect = sv('rect', { x, y: 0, width: w, height: H, fill: s.color, class: 'bar-seg' });
+    const pct = Math.round(s.value / total * 100);
+    rect.addEventListener('pointerenter', ev => tip.show(ttRows(s.label, [
+      { label: '金額', value: fmtMan(s.value) },
+      { label: '割合', value: pct + '%' },
+    ]), ev.clientX, ev.clientY));
+    rect.addEventListener('pointermove', ev => tip.move(ev.clientX, ev.clientY));
+    rect.addEventListener('pointerleave', () => tip.hide());
+    g.appendChild(rect);
+    // 直接ラベルは主役(手取り)だけ・入る幅があるときだけ(狭い画面では省略し凡例に任せる)
+    if (s.labelInside && w > 170 && container.clientWidth > 460) {
+      const t = sv('text', { x: x + 12, y: H / 2 + 4.8, 'font-size': 13.5, 'font-weight': 700, fill: '#0d2b1f' });
+      t.textContent = `${s.label} ${pct}%`;
+      g.appendChild(t);
+    }
+    x += w + GAP;
+  });
+  svg.appendChild(g);
+  container.appendChild(svg);
+}
+
+function makeLegend(container, items) {
+  container.textContent = '';
+  for (const it of items) {
+    const row = h('span', 'lg-item');
+    const sw = h('span', it.line ? 'lg-line' : 'lg-swatch');
+    if (it.line) sw.style.borderTopColor = it.color; else sw.style.background = it.color;
+    row.appendChild(sw);
+    row.appendChild(h('span', null, it.label));
+    if (it.value) row.appendChild(h('span', 'lg-val num', it.value));
+    container.appendChild(row);
+  }
+}
+
+// 推移の折れ線(額面=文脈グレー、手取り=アクア、昇進マーカー、クロスヘア)
+function renderTrendChart(container, rows) {
+  container.textContent = '';
+  const W = 720, H = 280, L = 54, R = 76, T = 18, B = 34;
+  const n = rows.length;
+  const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart-svg', role: 'img', 'aria-label': '額面と手取りの推移' });
+  const xs = i => L + (W - L - R) * (n === 1 ? 0.5 : i / (n - 1));
+  const maxMan = Math.max(...rows.map(r => r.taxableGross)) / 10000;
+  const ticks = niceTicks(0, maxMan * 1.08, 4);
+  const yMax = ticks[ticks.length - 1];
+  const ys = man => T + (H - T - B) * (1 - man / yMax);
+  for (const t of ticks) {
+    svg.appendChild(sv('line', { x1: L, x2: W - R, y1: ys(t), y2: ys(t), stroke: t === 0 ? 'var(--axis)' : 'var(--grid)', 'stroke-width': 1 }));
+    const lab = sv('text', { x: L - 8, y: ys(t) + 4, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--muted)', class: 'num' });
+    lab.textContent = t.toLocaleString('ja-JP') + '万';
+    svg.appendChild(lab);
+  }
+  const xStep = Math.max(1, Math.ceil(n / 10));
+  rows.forEach((r, i) => {
+    if (i % xStep === 0 || i === n - 1) {
+      const lab = sv('text', { x: xs(i), y: H - B + 18, 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--muted)' });
+      lab.textContent = r.year + '年目';
+      svg.appendChild(lab);
+    }
+  });
+  const path = (get, color) => {
+    const d = rows.map((r, i) => (i ? 'L' : 'M') + xs(i).toFixed(1) + ',' + ys(get(r) / 10000).toFixed(1)).join('');
+    svg.appendChild(sv('path', { d, fill: 'none', stroke: color, 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+  };
+  path(r => r.taxableGross, SERIES.context);
+  path(r => r.net, SERIES.keep);
+  // 昇進マーカー(手取り線上)
+  rows.forEach((r, i) => {
+    if (r.promo) {
+      svg.appendChild(sv('circle', { cx: xs(i), cy: ys(r.net / 10000), r: 5.5, fill: SERIES.keep, stroke: 'var(--surface)', 'stroke-width': 2 }));
+    }
+  });
+  // 終端マーカー+直接ラベル(衝突したら離す)
+  const endG = ys(rows[n - 1].taxableGross / 10000), endN = ys(rows[n - 1].net / 10000);
+  let yG = endG, yN = endN;
+  if (yN - yG < 16) { yG -= (16 - (yN - yG)) / 2; yN += (16 - (endN - endG)) / 2; }
+  svg.appendChild(sv('circle', { cx: xs(n - 1), cy: endG, r: 4, fill: SERIES.context, stroke: 'var(--surface)', 'stroke-width': 2 }));
+  svg.appendChild(sv('circle', { cx: xs(n - 1), cy: endN, r: 4, fill: SERIES.keep, stroke: 'var(--surface)', 'stroke-width': 2 }));
+  const endLab = (y, text, cls) => {
+    const t = sv('text', { x: xs(n - 1) + 9, y: y + 4, 'font-size': 11.5, 'font-weight': 700, fill: cls, class: 'num' });
+    t.textContent = text;
+    svg.appendChild(t);
+  };
+  endLab(yG, manNum(rows[n - 1].taxableGross, 0) + '万', 'var(--muted)');
+  endLab(yN, manNum(rows[n - 1].net, 0) + '万', 'var(--ink)');
+  // クロスヘア+ツールチップ
+  const cross = sv('line', { y1: T, y2: H - B, stroke: 'var(--axis)', 'stroke-width': 1, visibility: 'hidden' });
+  svg.appendChild(cross);
+  const overlay = sv('rect', { x: L, y: T, width: W - L - R, height: H - T - B, fill: 'transparent' });
+  overlay.addEventListener('pointermove', ev => {
+    const rect = svg.getBoundingClientRect();
+    const px = (ev.clientX - rect.left) * (W / rect.width);
+    const i = clampN(Math.round((px - L) / ((W - L - R) / Math.max(1, n - 1))), 0, n - 1);
+    cross.setAttribute('x1', xs(i)); cross.setAttribute('x2', xs(i));
+    cross.setAttribute('visibility', 'visible');
+    const r = rows[i];
+    const list = [
+      { label: '額面', value: fmtMan(r.taxableGross, 0), color: SERIES.context },
+      { label: '手取り', value: fmtMan(r.net, 0), color: SERIES.keep },
+      { label: '住民税', value: fmtMan(r.residentTax, 1) },
+    ];
+    if (r.promo) list.push({ label: '昇進', value: (r.promo.label || '') + ' +' + fmtMan(r.promo.amount, 1) + '/月' });
+    tip.show(ttRows(r.year + '年目(' + r.age + '歳)', list), ev.clientX, ev.clientY);
+  });
+  overlay.addEventListener('pointerleave', () => { cross.setAttribute('visibility', 'hidden'); tip.hide(); });
+  svg.appendChild(overlay);
+  container.appendChild(svg);
+}
+
+// 累計貯蓄の柱(正=アクア、負=赤、最終値に直接ラベル)
+function renderCumChart(container, rows) {
+  container.textContent = '';
+  const W = 720, H = 230, L = 54, R = 16, T = 22, B = 34;
+  const n = rows.length;
+  const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart-svg', role: 'img', 'aria-label': '累計貯蓄の推移' });
+  const vals = rows.map(r => r.cum / 10000);
+  const minV = Math.min(0, ...vals), maxV = Math.max(0, ...vals);
+  const ticks = niceTicks(minV, maxV * 1.1 || 10, 4);
+  const lo = ticks[0], hi = ticks[ticks.length - 1];
+  const ys = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo || 1));
+  const xs = i => L + (W - L - R) * ((i + 0.5) / n);
+  for (const t of ticks) {
+    svg.appendChild(sv('line', { x1: L, x2: W - R, y1: ys(t), y2: ys(t), stroke: t === 0 ? 'var(--axis)' : 'var(--grid)', 'stroke-width': 1 }));
+    const lab = sv('text', { x: L - 8, y: ys(t) + 4, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--muted)', class: 'num' });
+    lab.textContent = t.toLocaleString('ja-JP') + '万';
+    svg.appendChild(lab);
+  }
+  const bw = Math.min(24, (W - L - R) / n * 0.55);
+  const y0 = ys(0);
+  rows.forEach((r, i) => {
+    const v = r.cum / 10000;
+    const yTop = ys(Math.max(0, v)), yBot = ys(Math.min(0, v));
+    const x = xs(i) - bw / 2;
+    const hh = Math.max(1, yBot - yTop);
+    const rad = Math.min(4, hh / 2);
+    let d;
+    if (v >= 0) {
+      d = `M${x},${y0} L${x},${yTop + rad} Q${x},${yTop} ${x + rad},${yTop} L${x + bw - rad},${yTop} Q${x + bw},${yTop} ${x + bw},${yTop + rad} L${x + bw},${y0} Z`;
+    } else {
+      d = `M${x},${y0} L${x},${yBot - rad} Q${x},${yBot} ${x + rad},${yBot} L${x + bw - rad},${yBot} Q${x + bw},${yBot} ${x + bw},${yBot - rad} L${x + bw},${y0} Z`;
+    }
+    const bar = sv('path', { d, fill: v >= 0 ? SERIES.keep : SERIES.neg, class: 'bar-seg' });
+    bar.addEventListener('pointerenter', ev => tip.show(ttRows(r.year + '年目', [
+      { label: 'その年の収支', value: (r.balance >= 0 ? '+' : '') + fmtMan(r.balance, 0) },
+      { label: '累計貯蓄', value: fmtMan(r.cum, 0) },
+    ]), ev.clientX, ev.clientY));
+    bar.addEventListener('pointermove', ev => tip.move(ev.clientX, ev.clientY));
+    bar.addEventListener('pointerleave', () => tip.hide());
+    svg.appendChild(bar);
+    // X軸ラベルは推移チャートと揃える
+    const xStep = Math.max(1, Math.ceil(n / 10));
+    if (i % xStep === 0 || i === n - 1) {
+      const lab = sv('text', { x: xs(i), y: H - B + 18, 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--muted)' });
+      lab.textContent = r.year + '年目';
+      svg.appendChild(lab);
+    }
+  });
+  // 最終値ラベル
+  const last = rows[n - 1];
+  const lv = last.cum / 10000;
+  const lab = sv('text', {
+    x: Math.min(xs(n - 1), W - R - 4), y: Math.max(14, ys(Math.max(0, lv)) - 8),
+    'text-anchor': 'end', 'font-size': 12.5, 'font-weight': 900, fill: 'var(--ink)', class: 'num',
+  });
+  lab.textContent = '累計 ' + manNum(last.cum, 0) + '万円';
+  svg.appendChild(lab);
+  container.appendChild(svg);
+}
+
+/* ---------------------------------------------------------------------
+   かんたんタブ
+--------------------------------------------------------------------- */
+function simpleResult(annual, bonusMonths, opts = {}) {
+  const monthly = annual / (12 + bonusMonths);
+  return {
+    monthly,
+    r: calcYear({
+      monthly, bonusMonths, allowTaxableM: 0, commuteM: 0,
+      age: opts.age ?? 23, healthRate: (opts.healthRate ?? 9.91) / 100, idecoM: 0,
+      residentTaxOf: 'same',
+    }),
+  };
+}
+function renderSimple() {
+  const s = state.simple;
+  const { monthly, r } = simpleResult(s.annual, s.bonusMonths);
+  const net = r.net;
+  const monthlyNet = net / (12 + s.bonusMonths);
+  const bonusNet = monthlyNet * s.bonusMonths;
+  $('s-hero-net').innerHTML = '';
+  $('s-hero-net').append(manNum(net, 0), Object.assign(h('span', 'u'), { textContent: '万円' }));
+  $('s-hero-rate').textContent = '額面 ' + fmtMan(s.annual, 0) + ' × 手取り率 約' + Math.round(net / s.annual * 100) + '%';
+  $('s-hero-monthly').innerHTML = '';
+  $('s-hero-monthly').append(manNum(monthlyNet, 1), Object.assign(h('span', 'u'), { textContent: '万円' }));
+  $('s-hero-monthly-sub').textContent = s.bonusMonths ? '月給(額面 ' + fmtMan(monthly, 1) + ')から' : '額面 ' + fmtMan(monthly, 1) + ' から';
+  $('s-hero-bonus').innerHTML = '';
+  $('s-hero-bonus').append(manNum(bonusNet, 0), Object.assign(h('span', 'u'), { textContent: '万円' }));
+
+  // 1年目コールアウト
+  const first = $('s-firstyear');
+  first.innerHTML = '<div class="co-title">💡 1年目はもう少し多い</div>' +
+    '住民税(年 <strong>' + fmtMan(r.residentTax, 1) + '</strong>)は前年の所得に課税されるため、社会人1年目はほぼ引かれません。' +
+    '1年目の手取りは約 <strong>' + fmtMan(net + r.residentTax, 0) + '</strong> の見込み。そのぶん2年目は手取りが下がるので油断は禁物!';
+
+  // 帯グラフ
+  renderBreakdownBar($('s-chart'), [
+    { label: '手取り', value: net, color: SERIES.keep, labelInside: true },
+    { label: '社会保険料', value: r.si.total, color: SERIES.si },
+    { label: '所得税', value: r.incomeTax, color: SERIES.itax },
+    { label: '住民税', value: r.residentTax, color: SERIES.rtax },
+  ], r.taxableGross);
+  makeLegend($('s-legend'), [
+    { label: '手取り', color: SERIES.keep, value: fmtMan(net, 0) },
+    { label: '社会保険料', color: SERIES.si, value: fmtMan(r.si.total, 0) },
+    { label: '所得税', color: SERIES.itax, value: fmtMan(r.incomeTax, 1) },
+    { label: '住民税', color: SERIES.rtax, value: fmtMan(r.residentTax, 1) },
+  ]);
+
+  // 給与明細
+  const ps = $('s-payslip');
+  ps.innerHTML = '';
+  const row = (label, yen, opt = {}) => {
+    const div = h('div', 'ps-row' + (opt.total ? ' ps-total' : ''));
+    const l = h('span', 'ps-l');
+    if (opt.swatch) { const sw = h('span', 'ps-swatch'); sw.style.background = opt.swatch; l.appendChild(sw); }
+    if (opt.tip) {
+      const t = h('span', 'tip', label); t.dataset.tip = opt.tip; l.appendChild(t);
+    } else l.appendChild(h('span', null, label));
+    const rr = h('span', 'ps-r');
+    const y = h('span', 'yen num', (opt.minus ? '− ' : '') + fmtYen(yen));
+    rr.appendChild(y);
+    rr.appendChild(h('span', 'per-m num', '月あたり ' + fmtYen(yen / 12)));
+    div.append(l, rr);
+    ps.appendChild(div);
+  };
+  ps.appendChild(h('div', 'ps-section', '支 給'));
+  row('額面年収(賞与込み)', r.taxableGross);
+  ps.appendChild(h('div', 'ps-section', '控 除'));
+  row('健康保険料', r.si.health, { minus: true, swatch: '#2a78d6', tip: '医療費が3割負担で済む公的医療保険。協会けんぽ(東京)の料率で、会社と折半した本人負担分。' });
+  row('厚生年金保険料', r.si.pension, { minus: true, swatch: '#2a78d6', tip: '将来の年金の掛金。料率18.3%を会社と折半。国民年金(月約1.7万)も含んでおり、実は会社員はおトク。' });
+  row('雇用保険料', r.si.emp, { minus: true, swatch: '#2a78d6', tip: '失業したときの手当などの保険。本人負担は給与の0.55%。' });
+  row('所得税(復興税込み)', r.incomeTax, { minus: true, swatch: '#eb6834', tip: '国に納める税金。所得が高いほど税率が上がる累進課税(5%〜)。毎月の給与から天引き(源泉徴収)される。' });
+  row('住民税', r.residentTax, { minus: true, swatch: '#4a3aa7', tip: '住んでいる自治体に納める税金(約10%)。前年の所得に課税されるため、1年目はほぼゼロ、2年目の6月から天引きが始まる。' });
+  row('手取り(差引支給額)', net, { total: true });
+
+  // ひと月の目安
+  const g = $('s-guide');
+  g.innerHTML = '';
+  const guide = [
+    ['家賃の目安(手取りの30%)', monthlyNet * 0.30],
+    ['生活費の目安(50%)', monthlyNet * 0.50],
+    ['貯蓄・自己投資(20%)', monthlyNet * 0.20],
+  ];
+  for (const [label, v] of guide) {
+    const div = h('div', 'ps-row');
+    div.appendChild(h('span', 'ps-l', label));
+    const rr = h('span', 'ps-r');
+    rr.appendChild(h('span', 'yen num', fmtMan(v, 1)));
+    div.appendChild(rr);
+    g.appendChild(div);
+  }
+
+  // 早見表
+  const tb = $('s-quicktable');
+  tb.innerHTML = '';
+  for (let man = 200; man <= 1000; man += 50) {
+    const annual = man * 10000;
+    const res = simpleResult(annual, s.bonusMonths).r;
+    const tr = document.createElement('tr');
+    if (Math.abs(annual - s.annual) < 250000) tr.className = 'promo-row';
+    const cells = [
+      [man + '万円', false],
+      [manNum(res.net, 0) + '万円', true],
+      [Math.round(res.net / annual * 100) + '%', false],
+      [manNum(res.net / (12 + s.bonusMonths), 1) + '万円', false],
+      [manNum(res.si.total + res.incomeTax + res.residentTax, 0) + '万円', false],
+    ];
+    for (const [text, strong] of cells) {
+      const td = h('td', strong ? 'strong num' : 'num', text);
+      tr.appendChild(td);
+    }
+    tb.appendChild(tr);
+  }
+}
+
+/* ---------------------------------------------------------------------
+   じっくりタブ
+--------------------------------------------------------------------- */
+const LIVING_ITEMS = [
+  ['food', '食費', 100000],
+  ['util', '水道・光熱', 40000],
+  ['comm', '通信・スマホ', 30000],
+  ['social', '交際・趣味', 100000],
+  ['cloth', '衣服・日用品', 60000],
+  ['scholar', '奨学金返済', 50000],
+  ['other', 'その他', 80000],
+];
+const HOUSING_MODES = [
+  ['home', '実家'],
+  ['rent', '賃貸(自分で契約)'],
+  ['allowance', '住宅手当あり'],
+  ['shataku', '借り上げ社宅・寮'],
+];
+
+function housingOf(d) {
+  // 返り値: {selfPayM: 住居の自己負担(月), allowM: 課税される手当(月)}
+  const hz = d.housing;
+  switch (hz.mode) {
+    case 'home': return { selfPayM: hz.familyPay, allowM: 0 };
+    case 'rent': return { selfPayM: hz.rent, allowM: 0 };
+    case 'allowance': return { selfPayM: hz.rent, allowM: hz.allowance };
+    case 'shataku': return { selfPayM: hz.selfPay, allowM: 0 };
+  }
+  return { selfPayM: 0, allowM: 0 };
+}
+
+function renderDeepHousingFields() {
+  const d = state.deep;
+  // chips
+  const chips = $('d-housingChips');
+  chips.innerHTML = '';
+  for (const [val, label] of HOUSING_MODES) {
+    const b = h('button', 'chip', label);
+    b.setAttribute('aria-pressed', String(d.housing.mode === val));
+    b.addEventListener('click', () => { d.housing.mode = val; renderDeepHousingFields(); renderDeep(); saveState(); });
+    chips.appendChild(b);
+  }
+  // fields
+  const box = $('d-housingFields');
+  box.innerHTML = '';
+  const fld = (label, key, min, max, step, hint) => {
+    const f = h('div', 'field');
+    const head = h('div', 'field-head');
+    const id = 'd-hz-' + key;
+    const lb = h('label', 'lbl', label); lb.setAttribute('for', id);
+    const val = h('span', 'field-val num', fmtMan(d.housing[key], 1));
+    head.append(lb, val);
+    const range = document.createElement('input');
+    Object.assign(range, { type: 'range', id, min, max, step, value: d.housing[key] });
+    range.addEventListener('input', () => {
+      d.housing[key] = +range.value;
+      val.textContent = fmtMan(d.housing[key], 1);
+      setRangeFill(range);
+      renderDeep(); saveState();
+    });
+    f.append(head, range);
+    if (hint) f.appendChild(h('p', 'hint', hint));
+    box.appendChild(f);
+    setRangeFill(range);
+  };
+  switch (d.housing.mode) {
+    case 'home':
+      fld('家に入れるお金(月)', 'familyPay', 0, 100000, 5000, '実家暮らしでも生活費として入れる人が多め。0円でもOK。');
+      break;
+    case 'rent':
+      fld('家賃(月)', 'rent', 20000, 200000, 5000);
+      break;
+    case 'allowance':
+      fld('家賃(月)', 'rent', 20000, 200000, 5000);
+      fld('住宅手当(月)', 'allowance', 0, 100000, 5000, '手当は給与に上乗せ=課税・社会保険の対象になります。');
+      break;
+    case 'shataku':
+      fld('自己負担(月)', 'selfPay', 0, 100000, 5000, '会社負担分は原則非課税。家賃との差額がまるごと浮きます。');
+      break;
+  }
+}
+
+function renderDeepPromos() {
+  const d = state.deep;
+  const box = $('d-promos');
+  box.innerHTML = '';
+  d.promotions.forEach((p, idx) => {
+    const row = h('div', 'promo-item');
+    const yearSel = document.createElement('select');
+    yearSel.style.width = '110px';
+    for (let y = 2; y <= 20; y++) {
+      const o = document.createElement('option');
+      o.value = y; o.textContent = y + '年目';
+      if (p.year === y) o.selected = true;
+      yearSel.appendChild(o);
+    }
+    yearSel.setAttribute('aria-label', '昇進する年');
+    yearSel.addEventListener('change', () => { p.year = +yearSel.value; renderDeep(); saveState(); });
+    const amount = document.createElement('input');
+    Object.assign(amount, { type: 'number', min: 0, max: 50, step: 0.5, value: round1(p.amount / 10000) });
+    amount.style.width = '76px'; amount.style.textAlign = 'right';
+    amount.setAttribute('aria-label', '月給の増加額(万円)');
+    amount.addEventListener('input', () => { p.amount = clampN((+amount.value || 0) * 10000, 0, 500000); renderDeep(); saveState(); });
+    const label = document.createElement('input');
+    Object.assign(label, { type: 'text', value: p.label || '', placeholder: '役職名(任意)', maxLength: 10 });
+    label.style.width = '120px';
+    label.addEventListener('input', () => { p.label = label.value; renderDeep(); saveState(); });
+    const del = h('button', 'btn-x', '×');
+    del.setAttribute('aria-label', 'この昇進を削除');
+    del.addEventListener('click', () => { d.promotions.splice(idx, 1); renderDeepPromos(); renderDeep(); saveState(); });
+    row.append(yearSel, amount, h('span', 'hint', '万円/月アップ'), label, del);
+    box.appendChild(row);
+  });
+}
+
+function renderDeepLiving() {
+  const d = state.deep;
+  const box = $('d-living');
+  box.innerHTML = '';
+  for (const [key, label, max] of LIVING_ITEMS) {
+    const f = h('div', 'field');
+    const head = h('div', 'field-head');
+    const id = 'd-lv-' + key;
+    const lb = h('label', 'lbl', label); lb.setAttribute('for', id);
+    const val = h('span', 'field-val num', fmtMan(d.living[key], 1));
+    head.append(lb, val);
+    const range = document.createElement('input');
+    Object.assign(range, { type: 'range', id, min: 0, max, step: 1000, value: d.living[key] });
+    range.addEventListener('input', () => {
+      d.living[key] = +range.value;
+      val.textContent = fmtMan(d.living[key], 1);
+      setRangeFill(range);
+      renderDeep(); saveState();
+    });
+    f.append(head, range);
+    box.appendChild(f);
+    setRangeFill(range);
+  }
+}
+
+function deepRows() {
+  const d = state.deep;
+  const hz = housingOf(d);
+  const rows = simulateYears({
+    monthly0: d.monthly, bonusMonths: d.bonusMonths, raisePct: d.raisePct,
+    promotions: d.promotions, years: d.years, age0: d.age,
+    otH: d.otH, otMode: d.otMode, allowHousingM: hz.allowM,
+    healthRate: d.healthRate / 100, idecoM: d.ideco * 10000,
+  });
+  const livingM = LIVING_ITEMS.reduce((s, [k]) => s + d.living[k], 0);
+  const spendM = livingM + hz.selfPayM;
+  let cum = 0;
+  for (const r of rows) {
+    r.spend = spendM * 12;
+    r.balance = r.net - r.spend; // iDeCo掛金は手取りから引かれず貯蓄扱い
+    cum += r.balance;
+    r.cum = cum;
+  }
+  return { rows, livingM, spendM, hz };
+}
+
+function renderDeep() {
+  const d = state.deep;
+  const { rows, spendM, hz } = deepRows();
+  const y1 = rows[0];
+  const monthlyNet1 = monthlyNetOf(y1, { monthly: y1.monthly, allowTaxableM: hz.allowM + y1.otPayM });
+  const monthlyBalance = monthlyNet1 - spendM;
+  const last = rows[rows.length - 1];
+
+  // stats
+  const stats = $('d-stats');
+  stats.innerHTML = '';
+  const stat = (label, valueHtmlBuilder, sub, hero) => {
+    const div = h('div', 'stat' + (hero ? ' hero' : ''));
+    div.appendChild(h('div', 's-label', label));
+    const v = h('div', 's-value num');
+    valueHtmlBuilder(v);
+    div.appendChild(v);
+    if (sub) div.appendChild(h('div', 's-sub', sub));
+    stats.appendChild(div);
+  };
+  stat(d.years + '年間の貯蓄(累計)', v => { v.append(manNum(last.cum, 0), Object.assign(h('span', 'u'), { textContent: '万円' })); },
+    '最終年の月給 ' + fmtMan(last.monthly, 1), true);
+  stat('1年目の手取り', v => { v.append(manNum(y1.net, 0), Object.assign(h('span', 'u'), { textContent: '万円' })); },
+    '額面 ' + fmtMan(y1.taxableGross, 0) + '(残業代込み)');
+  stat('月々の残り(1年目)', v => {
+    v.append((monthlyBalance >= 0 ? '+' : '−') + manNum(Math.abs(monthlyBalance), 1), Object.assign(h('span', 'u'), { textContent: '万円' }));
+    v.style.color = monthlyBalance >= 0 ? 'var(--good-text)' : 'var(--bad-text)';
+  }, '手取り月 ' + fmtMan(monthlyNet1, 1) + ' − 支出 ' + fmtMan(spendM, 1));
+
+  // callouts
+  const co = $('d-callouts');
+  co.innerHTML = '';
+  if (rows.length >= 2 && rows[1].net < rows[0].net) {
+    const c = h('div', 'callout warn');
+    c.innerHTML = '<div class="co-title">⚠ 「2年目の壁」に注意</div>' +
+      '2年目から住民税(年 ' + fmtMan(rows[1].residentTax, 1) + ')の天引きが始まり、手取りは ' +
+      fmtMan(rows[0].net, 0) + ' → <strong>' + fmtMan(rows[1].net, 0) + '</strong> に一度下がります。1年目の感覚でお金を使うと苦しくなりがち。';
+    co.appendChild(c);
+  }
+  if (monthlyBalance < 0) {
+    const yearlyOk = y1.balance >= 0;
+    const c = h('div', 'callout' + (yearlyOk ? '' : ' warn'));
+    c.innerHTML = yearlyOk
+      ? '<div class="co-title">💡 月々は赤字、賞与でカバー型</div>月単位では ' + fmtMan(Math.abs(monthlyBalance), 1) + ' の赤字ですが、賞与を含めた年間では ' +
+        '<strong>+' + fmtMan(y1.balance, 0) + '</strong>。賞与が減ると一気に苦しくなる家計なので、固定費は控えめが安心です。'
+      : '<div class="co-title">⚠ 年間でも赤字です</div>1年目は年間 <strong>' + fmtMan(Math.abs(y1.balance), 0) + '</strong> の赤字。家賃か固定費を見直すか、収入条件を再検討しましょう。';
+    co.appendChild(c);
+  }
+
+  // budget bars
+  const bud = $('d-budget');
+  bud.innerHTML = '';
+  const items = [['住まい(自己負担)', hz.selfPayM]].concat(
+    LIVING_ITEMS.map(([k, label]) => [label, d.living[k]]).filter(([, v]) => v > 0)
+  );
+  for (const [label, v] of items) {
+    const row = h('div', 'bud-row');
+    row.appendChild(h('span', 'bud-label', label));
+    const track = h('div', 'bud-track');
+    const fill = h('div', 'bud-fill');
+    fill.style.width = clampN(v / Math.max(1, monthlyNet1) * 100, 0, 100) + '%';
+    track.appendChild(fill);
+    row.appendChild(track);
+    row.appendChild(h('span', 'bud-val num', fmtMan(v, 1)));
+    bud.appendChild(row);
+  }
+  const sum = h('div', 'bud-sum');
+  sum.appendChild(h('span', null, '手取り ' + fmtMan(monthlyNet1, 1) + ' − 支出 ' + fmtMan(spendM, 1)));
+  const rest = h('span', 'num', '残り ' + (monthlyBalance >= 0 ? '+' : '−') + fmtMan(Math.abs(monthlyBalance), 1));
+  rest.style.color = monthlyBalance >= 0 ? 'var(--good-text)' : 'var(--bad-text)';
+  sum.appendChild(rest);
+  bud.appendChild(sum);
+  const note = h('p', 'chart-note', 'バーの長さは手取り月額に対する割合。賞与(手取り 約' + fmtMan(y1.net - monthlyNet1 * 12, 0) + '/年)は月々には含めていません。');
+  bud.appendChild(note);
+
+  // charts
+  renderTrendChart($('d-trend'), rows);
+  makeLegend($('d-trendLegend'), [
+    { label: '額面年収', color: SERIES.context, line: true },
+    { label: '手取り', color: SERIES.keep, line: true },
+    { label: '昇進の年', color: SERIES.keep },
+  ]);
+  renderCumChart($('d-cum'), rows);
+  $('d-cumNote').textContent = rows.some(r => r.cum < 0)
+    ? '赤いバーは累計がマイナス(貯金を取り崩している状態)です。'
+    : '毎年の「手取り − 支出」を積み上げた概算です。昇給・昇進で後半ほど貯まりやすくなります。';
+
+  // year table
+  const tb = $('d-yearTable');
+  tb.innerHTML = '';
+  for (const r of rows) {
+    const tr = document.createElement('tr');
+    if (r.promo) tr.className = 'promo-row';
+    const first = h('td', 'num');
+    first.append(r.year + '年目');
+    if (r.promo) {
+      const b = h('span', 'badge', (r.promo.label || '昇進') + '');
+      first.appendChild(b);
+    }
+    tr.appendChild(first);
+    const tds = [
+      [r.age + '歳', ''],
+      [manNum(r.monthly, 1) + '万', ''],
+      [manNum(r.taxableGross, 0) + '万', ''],
+      [manNum(r.net, 0) + '万', 'strong'],
+      [manNum(r.residentTax, 1) + '万', ''],
+      [manNum(r.spend, 0) + '万', ''],
+      [(r.balance >= 0 ? '+' : '−') + manNum(Math.abs(r.balance), 0) + '万', ''],
+      [manNum(r.cum, 0) + '万', 'strong'],
+    ];
+    tds.forEach(([text, cls]) => tr.appendChild(h('td', (cls + ' num').trim(), text)));
+    tb.appendChild(tr);
+  }
+}
+
+/* ---------------------------------------------------------------------
+   企業くらべタブ
+--------------------------------------------------------------------- */
+const C_HOUSING = [
+  ['none', 'サポートなし'],
+  ['allowance', '住宅手当'],
+  ['shataku', '借り上げ社宅・寮'],
+];
+
+function compResult(c, rentAssumption) {
+  const otPayM = c.otMode === 'full' ? c.monthly / TAXC.scheduledHoursM * 1.25 * c.otH : 0;
+  const allowM = (c.housing === 'allowance' ? c.allowance : 0) + otPayM;
+  const commuteM = c.commutePaid ? c.commuteCost : 0;
+  const r = calcYear({
+    monthly: c.monthly, bonusMonths: c.bonusMonths, allowTaxableM: allowM,
+    commuteM, age: state.deep.age ?? 22, healthRate: state.deep.healthRate / 100, idecoM: 0,
+    residentTaxOf: 'same',
+  });
+  const housingSelfY = (c.housing === 'shataku' ? c.selfPay : rentAssumption) * 12;
+  const commuteSelfY = c.commutePaid ? 0 : c.commuteCost * 12;
+  const perksY = c.perks * 12;
+  const disposable = r.net - housingSelfY - commuteSelfY + perksY;
+  const hoursY = (TAXC.scheduledHoursM + c.otH) * 12;
+  // 10年累計(実質)— 昇給と住民税タイムラグ込み
+  const rows = simulateYears({
+    monthly0: c.monthly, bonusMonths: c.bonusMonths, raisePct: c.raisePct,
+    promotions: [], years: 10, age0: state.deep.age ?? 22,
+    otH: c.otH, otMode: c.otMode, allowHousingM: c.housing === 'allowance' ? c.allowance : 0,
+    healthRate: state.deep.healthRate / 100, idecoM: 0,
+  });
+  const cum10 = rows.reduce((s, row) => s + row.net - housingSelfY - commuteSelfY + perksY, 0);
+  return { r, disposable, housingSelfY, commuteSelfY, perksY, hoursY, hourly: disposable / hoursY, cum10 };
+}
+
+function renderCompCards() {
+  const box = $('c-cards');
+  box.innerHTML = '';
+  state.comp.companies.forEach((c, idx) => {
+    if (!c.on) return;
+    const card = h('div', 'card company-card');
+    const head = h('div', 'cc-head');
+    head.appendChild(h('span', 'cc-color'));
+    const name = document.createElement('input');
+    Object.assign(name, { type: 'text', value: c.name, maxLength: 12 });
+    name.setAttribute('aria-label', '会社名');
+    name.addEventListener('input', () => { c.name = name.value || (['A社', 'B社', 'C社'][idx]); renderCompResults(); saveState(); });
+    head.appendChild(name);
+    if (idx === 2) {
+      const del = h('button', 'btn-x', '×');
+      del.setAttribute('aria-label', 'この会社を比較から外す');
+      del.addEventListener('click', () => { c.on = false; renderCompCards(); renderCompResults(); saveState(); });
+      head.appendChild(del);
+    }
+    card.appendChild(head);
+
+    const grid = h('div', 'grid2');
+    const numField = (label, key, min, max, step, unit, toDisp, fromDisp) => {
+      const f = h('div', 'field');
+      const fh = h('div', 'field-head');
+      fh.appendChild(h('span', 'lbl', label));
+      f.appendChild(fh);
+      const wrap = h('div', 'unit-input');
+      const inp = document.createElement('input');
+      Object.assign(inp, { type: 'number', min, max, step, value: toDisp(c[key]) });
+      inp.setAttribute('aria-label', c.name + 'の' + label);
+      inp.addEventListener('input', () => { c[key] = fromDisp(clampN(+inp.value || 0, min, max)); renderCompResults(); saveState(); });
+      wrap.appendChild(inp);
+      wrap.appendChild(h('span', 'unit', unit));
+      f.appendChild(wrap);
+      grid.appendChild(f);
+    };
+    const selField = (label, key, options, onchange) => {
+      const f = h('div', 'field');
+      const fh = h('div', 'field-head');
+      fh.appendChild(h('span', 'lbl', label));
+      f.appendChild(fh);
+      const sel = document.createElement('select');
+      for (const [val, text] of options) {
+        const o = document.createElement('option');
+        o.value = val; o.textContent = text;
+        if (String(c[key]) === String(val)) o.selected = true;
+        sel.appendChild(o);
+      }
+      sel.setAttribute('aria-label', c.name + 'の' + label);
+      sel.addEventListener('change', () => { onchange(sel.value); renderCompResults(); saveState(); });
+      f.appendChild(sel);
+      grid.appendChild(f);
+      return f;
+    };
+    numField('月給', 'monthly', 12, 100, 0.5, '万円', v => round1(v / 10000), v => v * 10000);
+    numField('賞与(年)', 'bonusMonths', 0, 8, 0.5, 'ヶ月', v => v, v => v);
+    numField('昇給率', 'raisePct', 0, 8, 0.1, '%/年', v => v, v => v);
+    numField('残業(月)', 'otH', 0, 80, 5, '時間', v => v, v => v);
+    selField('残業代', 'otMode', [['full', '全額支給'], ['fixed', '固定残業代込み']], v => { c.otMode = v; });
+    selField('住宅サポート', 'housing', C_HOUSING, v => { c.housing = v; renderCompCards(); });
+    if (c.housing === 'allowance') numField('住宅手当(月)', 'allowance', 0, 10, 0.5, '万円', v => round1(v / 10000), v => v * 10000);
+    if (c.housing === 'shataku') numField('社宅の自己負担(月)', 'selfPay', 0, 10, 0.5, '万円', v => round1(v / 10000), v => v * 10000);
+    selField('通勤定期代', 'commutePaid', [['true', '会社が支給'], ['false', '自己負担']], v => { c.commutePaid = v === 'true'; });
+    numField('定期代(月)', 'commuteCost', 0, 5, 0.1, '万円', v => round1(v / 10000), v => v * 10000);
+    numField('福利厚生(月換算)', 'perks', 0, 10, 0.5, '万円', v => round1(v / 10000), v => v * 10000);
+    card.appendChild(grid);
+    const hintP = h('p', 'hint', '福利厚生=食堂補助・企業型DC・持株会奨励金など、お金に換算できるもの。');
+    hintP.style.marginTop = '6px';
+    card.appendChild(hintP);
+    box.appendChild(card);
+  });
+  if (!state.comp.companies[2].on) {
+    const add = h('button', 'add-card', '+ 3社目を追加して比べる');
+    add.addEventListener('click', () => { state.comp.companies[2].on = true; renderCompCards(); renderCompResults(); saveState(); });
+    box.appendChild(add);
+  }
+}
+
+function renderCompResults() {
+  const comp = state.comp;
+  const list = comp.companies.filter(c => c.on);
+  const results = list.map(c => ({ c, ...compResult(c, comp.rent) }));
+
+  // callout: 額面と実質の逆転
+  const co = $('c-callout');
+  co.innerHTML = '';
+  if (results.length >= 2) {
+    const byGross = [...results].sort((a, b) => b.r.taxableGross - a.r.taxableGross);
+    const byDisp = [...results].sort((a, b) => b.disposable - a.disposable);
+    if (byGross[0].c !== byDisp[0].c) {
+      const cEl = h('div', 'callout');
+      const t = h('div', 'co-title', '🔄 額面と実質で順位が入れかわりました');
+      cEl.appendChild(t);
+      const p = h('div');
+      p.append('額面年収は ');
+      p.appendChild(h('strong', null, byGross[0].c.name));
+      p.append(' がトップですが、住まい・通勤・福利厚生まで含めた「実質的に使えるお金」では ');
+      p.appendChild(h('strong', null, byDisp[0].c.name));
+      p.append(' が年 ' + fmtMan(byDisp[0].disposable - byDisp[1].disposable, 0) + ' 差でリード。求人票の年収だけで決めるのはもったいない!');
+      cEl.appendChild(p);
+      co.appendChild(cEl);
+    }
+  }
+
+  // table
+  const thead = $('c-thead');
+  thead.innerHTML = '';
+  const hrow = document.createElement('tr');
+  hrow.appendChild(h('th', null, '項目'));
+  for (const res of results) hrow.appendChild(h('th', null, res.c.name));
+  thead.appendChild(hrow);
+
+  const tbody = $('c-tbody');
+  tbody.innerHTML = '';
+  const addRow = (label, getter, opts = {}) => {
+    const tr = document.createElement('tr');
+    if (opts.hero) tr.className = 'hero-metric';
+    const th = h('td', null);
+    if (opts.tip) { const s = h('span', 'tip', label); s.dataset.tip = opts.tip; th.appendChild(s); }
+    else th.textContent = label;
+    tr.appendChild(th);
+    const vals = results.map(getter);
+    let bestIdx = -1;
+    if (opts.best === 'max') bestIdx = vals.indexOf(Math.max(...vals));
+    if (opts.best === 'min') bestIdx = vals.indexOf(Math.min(...vals));
+    vals.forEach((v, i) => {
+      const td = h('td', 'num', opts.fmt(v));
+      if (i === bestIdx && results.length >= 2) td.classList.add('best');
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  };
+  addRow('額面年収(残業代込み)', res => res.r.taxableGross, { fmt: v => manNum(v, 0) + '万円' });
+  addRow('手取り年収', res => res.r.net, { best: 'max', fmt: v => manNum(v, 0) + '万円' });
+  addRow('住居の自己負担(年)', res => -res.housingSelfY, { fmt: v => '− ' + manNum(-v, 0) + '万円' });
+  addRow('通勤の自己負担(年)', res => -res.commuteSelfY, { fmt: v => v === 0 ? '0円' : '− ' + manNum(-v, 1) + '万円' });
+  addRow('福利厚生の価値(年)', res => res.perksY, { fmt: v => v === 0 ? '—' : '+ ' + manNum(v, 0) + '万円' });
+  addRow('★ 実質的に使えるお金(年)', res => res.disposable, { best: 'max', hero: true, fmt: v => manNum(v, 0) + '万円' });
+  addRow('同・月あたり', res => res.disposable / 12, { fmt: v => manNum(v, 1) + '万円' });
+  addRow('年間労働時間(残業込み)', res => res.hoursY, { best: 'min', fmt: v => v.toLocaleString('ja-JP') + '時間' });
+  addRow('実質時給', res => res.hourly, { best: 'max', fmt: v => fmtYen(v) });
+  addRow('10年累計(実質・昇給込み)', res => res.cum10, { best: 'max', fmt: v => manNum(v, 0) + '万円' });
+
+  // bars
+  const chart = $('c-chart');
+  chart.innerHTML = '';
+  const maxV = Math.max(...results.map(r => r.disposable), 1);
+  for (const res of results) {
+    const row = h('div', 'cmp-bar-row');
+    row.appendChild(h('span', 'cmp-bar-name', res.c.name));
+    const track = h('div', 'cmp-bar-track');
+    const w = clampN(res.disposable / maxV * 100, 0, 100);
+    const fill = h('div', 'cmp-bar-fill');
+    fill.style.width = 'max(2px, calc(' + w + '% - 74px))';
+    track.appendChild(fill);
+    const val = h('span', 'cmp-bar-val num', manNum(res.disposable, 0) + '万円');
+    val.style.left = 'max(6px, calc(' + w + '% - 66px))';
+    track.appendChild(val);
+    row.appendChild(track);
+    chart.appendChild(row);
+  }
+}
+
+/* ---------------------------------------------------------------------
+   input bindings & init
+--------------------------------------------------------------------- */
+function bindPair(numId, rangeId, get, set, opts = {}) {
+  // number入力(万円単位)とスライダー(円単位)を双方向同期
+  const num = $(numId), range = $(rangeId);
+  const toMan = opts.toMan ?? (v => round1(v / 10000));
+  const fromMan = opts.fromMan ?? (v => v * 10000);
+  const sync = () => {
+    num.value = toMan(get());
+    range.value = clampN(get(), +range.min, +range.max);
+    setRangeFill(range);
+  };
+  num.addEventListener('input', () => {
+    const v = fromMan(+num.value || 0);
+    set(clampN(v, opts.minYen ?? 0, opts.maxYen ?? Infinity));
+    range.value = clampN(get(), +range.min, +range.max);
+    setRangeFill(range);
+    opts.onchange();
+  });
+  range.addEventListener('input', () => {
+    set(+range.value);
+    num.value = toMan(get());
+    setRangeFill(range);
+    opts.onchange();
+  });
+  sync();
+}
+function bindSliderVal(rangeId, valId, get, set, fmt, onchange) {
+  const range = $(rangeId), val = $(valId);
+  const sync = () => { range.value = get(); val.textContent = fmt(get()); setRangeFill(range); };
+  range.addEventListener('input', () => { set(+range.value); val.textContent = fmt(get()); setRangeFill(range); onchange(); });
+  sync();
+}
+
+function switchTab(name) {
+  state.tab = name;
+  for (const t of ['simple', 'deep', 'comp']) {
+    $('tab-' + t).setAttribute('aria-selected', String(t === name));
+    $('panel-' + t).hidden = t !== name;
+  }
+  // 表示状態でチャートの幅判定などが正しく効くよう、表示後に再描画
+  if (renderersReady) {
+    if (name === 'simple') renderSimple();
+    if (name === 'deep') renderDeep();
+    if (name === 'comp') renderCompResults();
+  }
+  saveState();
+}
+let renderersReady = false;
+
+function applyTheme() {
+  const t = state.theme;
+  if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+  else delete document.documentElement.dataset.theme;
+  const btn = $('themeBtn');
+  const icons = {
+    auto: '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm0 1.5V13.5a5.5 5.5 0 0 1 0-11Z"/></svg>',
+    light: '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><circle cx="8" cy="8" r="3.4"/><path d="M8 .8v2.2M8 13v2.2M.8 8H3M13 8h2.2M2.9 2.9l1.6 1.6M11.5 11.5l1.6 1.6M13.1 2.9l-1.6 1.6M4.5 11.5l-1.6 1.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
+    dark: '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M13.8 9.6A6.3 6.3 0 0 1 6.4 2.2a.4.4 0 0 0-.5-.5 6.8 6.8 0 1 0 8.4 8.4.4.4 0 0 0-.5-.5Z"/></svg>',
+  };
+  const labels = { auto: '表示: 自動', light: '表示: ライト', dark: '表示: ダーク' };
+  btn.innerHTML = icons[t] + '<span>' + labels[t] + '</span>';
+}
+
+function init() {
+  // tabs
+  for (const t of ['simple', 'deep', 'comp']) {
+    $('tab-' + t).addEventListener('click', () => switchTab(t));
+  }
+  switchTab(state.tab || 'simple');
+
+  // theme
+  applyTheme();
+  $('themeBtn').addEventListener('click', () => {
+    state.theme = state.theme === 'auto' ? 'light' : state.theme === 'light' ? 'dark' : 'auto';
+    applyTheme(); saveState();
+  });
+
+  // simple
+  bindPair('s-annual', 's-annualRange',
+    () => state.simple.annual, v => { state.simple.annual = v; },
+    { minYen: 500000, maxYen: 100000000, onchange: () => { renderSimple(); saveState(); } });
+  $('s-bonus').value = String(state.simple.bonusMonths);
+  $('s-bonus').addEventListener('change', () => {
+    state.simple.bonusMonths = +$('s-bonus').value;
+    renderSimple(); saveState();
+  });
+  $('s-toDeep').addEventListener('click', () => {
+    // 年収からざっくり月給へ引き継ぎ
+    const m = state.simple.annual / (12 + state.simple.bonusMonths);
+    state.deep.monthly = Math.round(m / 5000) * 5000;
+    state.deep.bonusMonths = state.simple.bonusMonths;
+    $('d-monthly').value = round1(state.deep.monthly / 10000);
+    $('d-monthlyRange').value = clampN(state.deep.monthly, 150000, 600000);
+    setRangeFill($('d-monthlyRange'));
+    $('d-bonusR').value = state.deep.bonusMonths;
+    $('d-bonusVal').textContent = state.deep.bonusMonths + 'ヶ月分';
+    setRangeFill($('d-bonusR'));
+    switchTab('deep');
+    renderDeep(); saveState();
+    scrollTo({ top: 0 });
+  });
+
+  // deep
+  bindPair('d-monthly', 'd-monthlyRange',
+    () => state.deep.monthly, v => { state.deep.monthly = v; },
+    { minYen: 100000, maxYen: 2000000, onchange: () => { renderDeep(); saveState(); } });
+  bindSliderVal('d-bonusR', 'd-bonusVal',
+    () => state.deep.bonusMonths, v => { state.deep.bonusMonths = v; },
+    v => v ? v + 'ヶ月分' : 'なし', () => { renderDeep(); saveState(); });
+  bindSliderVal('d-raiseR', 'd-raiseVal',
+    () => state.deep.raisePct, v => { state.deep.raisePct = v; },
+    v => v.toFixed(1) + '%', () => { renderDeep(); saveState(); });
+  bindSliderVal('d-otR', 'd-otVal',
+    () => state.deep.otH, v => { state.deep.otH = v; },
+    v => v + '時間', () => { renderDeep(); saveState(); });
+  $('d-otmode').value = state.deep.otMode;
+  $('d-otmode').addEventListener('change', () => { state.deep.otMode = $('d-otmode').value; renderDeep(); saveState(); });
+  bindSliderVal('d-yearsR', 'd-yearsVal',
+    () => state.deep.years, v => { state.deep.years = v; },
+    v => v + '年', () => { renderDeep(); saveState(); });
+  $('d-age').value = state.deep.age;
+  $('d-age').addEventListener('input', () => {
+    state.deep.age = clampN(Math.round(+$('d-age').value || 22), 18, 40);
+    renderDeep(); saveState();
+  });
+  $('d-addPromo').addEventListener('click', () => {
+    if (state.deep.promotions.length >= 5) return;
+    const used = state.deep.promotions.map(p => p.year);
+    let year = 3;
+    while (used.includes(year) && year < 20) year++;
+    state.deep.promotions.push({ year, amount: 30000, label: '' });
+    renderDeepPromos(); renderDeep(); saveState();
+  });
+  $('d-health').value = state.deep.healthRate;
+  $('d-health').addEventListener('input', () => {
+    state.deep.healthRate = clampN(+$('d-health').value || 9.91, 8, 12);
+    renderDeep(); saveState();
+  });
+  $('d-ideco').value = state.deep.ideco;
+  $('d-ideco').addEventListener('input', () => {
+    state.deep.ideco = clampN(+$('d-ideco').value || 0, 0, 7);
+    renderDeep(); saveState();
+  });
+  renderDeepHousingFields();
+  renderDeepPromos();
+  renderDeepLiving();
+
+  // comp
+  bindSliderVal('c-rent', 'c-rentVal',
+    () => state.comp.rent, v => { state.comp.rent = v; },
+    v => fmtMan(v, 1), () => { renderCompResults(); saveState(); });
+  renderCompCards();
+
+  // reset
+  $('resetBtn').addEventListener('click', () => {
+    if (confirm('入力内容をすべて初期値に戻します。よろしいですか?')) {
+      localStorage.removeItem(STORAGE_KEY);
+      location.reload();
+    }
+  });
+
+  renderSimple();
+  renderDeep();
+  renderCompResults();
+  renderersReady = true;
+  // 画面幅で変わる描画(帯グラフの直接ラベルなど)を追従させる
+  addEventListener('resize', debounce(() => {
+    if (state.tab === 'simple') renderSimple();
+    if (state.tab === 'deep') renderDeep();
+    if (state.tab === 'comp') renderCompResults();
+  }, 200));
+}
+init();
+</script>
+</body>
+</html>
