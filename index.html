@@ -215,6 +215,17 @@ details.adv .adv-body{margin-top:12px}
 .btn-x{width:30px;height:30px;border-radius:8px;color:var(--muted);display:grid;place-items:center;font-size:15px;flex:none}
 .btn-x:hover{background:var(--surface-2);color:var(--bad-text)}
 
+/* ---------- ライフイベント ---------- */
+.life-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.life-item{background:var(--surface-3);border:1px solid var(--line);border-radius:11px;padding:14px 16px;display:grid;gap:5px;align-content:start}
+.life-item .li-name{font-family:var(--font-display);font-weight:700;font-size:14px}
+.life-item .li-amount{font-size:19px;font-weight:900}
+.life-item .li-amount .u{font-size:11.5px;font-weight:700;color:var(--muted);margin-left:3px}
+.life-item .li-desc{font-size:11.5px;color:var(--muted);line-height:1.6}
+.life-item .li-add{display:flex;align-items:center;gap:6px;margin-top:5px}
+.life-item .li-add select{width:86px;padding:4px 22px 4px 8px;font-size:12px}
+.life-item .li-add button{font-size:11.5px;padding:5px 10px}
+
 /* ---------- 段階レベル ---------- */
 .level-bar{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;margin:-4px 0 18px}
 .level-bar .lbl{font-size:12.5px;color:var(--ink-2)}
@@ -549,7 +560,7 @@ tr.hero-metric td:first-child{font-weight:900;color:var(--ink)}
           <button class="btn btn-ghost" id="d-addPromo">+ 昇進を追加</button>
         </div>
         <div id="d-anchorsBox" hidden>
-          <p class="hint" style="margin-bottom:10px">「◯年目に年収◯◯万円」を並べると、間の年は複利でなめらかに補間します(年収=基本給+賞与、残業代は別途上乗せ)。最後のポイント以降は直前の伸び率が続きます。</p>
+          <p class="hint" style="margin-bottom:10px">「◯年目に年収◯◯万円」を並べると、指定した年に一気に上がり、次のポイントまではその金額のまま(昇進のような階段イメージ)。最後のポイント以降もその金額が続きます。年収=基本給+賞与で、残業代は別途上乗せ。</p>
           <div id="d-anchors"></div>
           <button class="btn btn-ghost" id="d-addAnchor">+ 年収ポイントを追加</button>
         </div>
@@ -573,9 +584,9 @@ tr.hero-metric td:first-child{font-weight:900;color:var(--ink)}
       </div>
 
       <div class="card">
-        <h2>住まい</h2>
-        <div class="chips" id="d-housingChips" role="group" aria-label="住まいの形態"></div>
-        <div class="subfields" id="d-housingFields"></div>
+        <h2>住まい <span class="sub">引越し・住み替えも設定OK</span></h2>
+        <div id="d-housingPlans"></div>
+        <button class="btn btn-ghost lv2" id="d-addHousing">+ ◯年目から住まいを変える</button>
       </div>
 
       <div class="card">
@@ -614,46 +625,92 @@ tr.hero-metric td:first-child{font-weight:900;color:var(--ink)}
           </div>
         </details>
       </div>
+
+      <div class="card lv2">
+        <h2>貯蓄と投資 <span class="sub">残ったお金のゆくえ</span></h2>
+        <div id="d-investBox"></div>
+        <div class="field">
+          <div class="field-head"><label class="lbl" for="d-invReturnR">想定利回り(年)</label><span class="field-val" id="d-invReturnVal"></span></div>
+          <input type="range" id="d-invReturnR" min="0" max="10" step="0.5">
+        </div>
+        <p class="hint">つみたてNISA想定(利益は非課税)。長期の株式インデックスでは年3〜5%がよく使われますが、運用成績は保証されません。積立分は「投資評価額」として資産に集計します。</p>
+      </div>
     </div>
     <div class="col">
+      <div class="scen-bar">
+        <span class="lbl">表示:</span>
+        <div class="chips" id="d-viewChips"></div>
+      </div>
       <div class="scen-bar" id="d-scenBar" hidden>
-        <span class="lbl">表示中のシナリオ:</span>
+        <span class="lbl">シナリオ:</span>
         <div class="chips" id="d-scenChips"></div>
       </div>
-      <div class="stat-row" id="d-stats"></div>
-      <div class="card" id="d-scenSummary" hidden>
-        <h2>シナリオ比較 <span class="sub" id="d-scenSummarySub"></span></h2>
-        <div class="table-scroll">
-          <table class="data" style="min-width:460px">
-            <thead><tr><th>シナリオ</th><th>最終年の額面</th><th>最終年の手取り</th><th>累計貯蓄</th></tr></thead>
-            <tbody id="d-scenSummaryBody"></tbody>
-          </table>
+
+      <!-- 複数年ビュー -->
+      <div id="d-multiView" style="display:grid;gap:18px;min-width:0">
+        <div class="stat-row" id="d-stats"></div>
+        <div class="card" id="d-scenSummary" hidden>
+          <h2>シナリオ比較 <span class="sub" id="d-scenSummarySub"></span></h2>
+          <div class="table-scroll">
+            <table class="data" style="min-width:460px">
+              <thead><tr><th>シナリオ</th><th>最終年の額面</th><th>最終年の手取り</th><th>資産(累計)</th></tr></thead>
+              <tbody id="d-scenSummaryBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="d-callouts"></div>
+        <div class="card">
+          <h2 id="d-trendTitle">年収と手取りの推移</h2>
+          <div class="chart-wrap" id="d-trend"></div>
+          <div class="legend" id="d-trendLegend"></div>
+          <div class="chart-title">資産の積み上がり <span class="tip" data-tip="毎年の「手取り − 支出」を貯蓄し、積立投資分は想定利回りで複利成長させた資産の合計。iDeCo掛金も現金側に含めています。">?</span></div>
+          <div class="chart-wrap" id="d-cum"></div>
+          <div class="legend" id="d-cumLegend"></div>
+          <p class="chart-note" id="d-cumNote"></p>
+        </div>
+        <div class="card">
+          <h2>年次シミュレーション表</h2>
+          <div class="table-scroll">
+            <table class="data">
+              <thead><tr><th>年目</th><th>年齢</th><th>月給</th><th>額面年収</th><th>手取り</th><th>うち住民税</th><th>年間支出</th><th>年間収支</th><th>累計資産</th></tr></thead>
+              <tbody id="d-yearTable"></tbody>
+            </table>
+          </div>
+          <p class="chart-note">住民税は前年の所得に対して翌年払うため、1年目は0円・2年目から発生します。</p>
+        </div>
+        <div class="card" id="d-futureCard">
+          <h2 id="d-futureTitle"></h2>
+          <p style="font-size:14px;line-height:1.9" id="d-futureBody"></p>
         </div>
       </div>
-      <div id="d-callouts"></div>
-      <div class="card">
-        <h2>月々のお金の流れ <span class="sub">1年目・賞与は含まず</span></h2>
-        <div id="d-budget"></div>
-      </div>
-      <div class="card">
-        <h2 id="d-trendTitle">年収と手取りの推移</h2>
-        <div class="chart-wrap" id="d-trend"></div>
-        <div class="legend" id="d-trendLegend"></div>
-        <div class="chart-title">貯蓄の積み上がり <span class="tip" data-tip="毎年の「手取り − 支出」を貯蓄として積み上げた金額。iDeCo掛金も貯蓄に含めています。">?</span></div>
-        <div class="chart-wrap" id="d-cum"></div>
-        <p class="chart-note" id="d-cumNote"></p>
-      </div>
-      <div class="card">
-        <h2>年次シミュレーション表</h2>
-        <div class="table-scroll">
-          <table class="data">
-            <thead><tr><th>年目</th><th>年齢</th><th>月給</th><th>額面年収</th><th>手取り</th><th>うち住民税</th><th>年間支出</th><th>年間収支</th><th>累計貯蓄</th></tr></thead>
-            <tbody id="d-yearTable"></tbody>
-          </table>
+
+      <!-- 単年ビュー -->
+      <div id="d-singleView" hidden style="display:grid;gap:18px;min-width:0">
+        <div class="card">
+          <h2>1年ずつくわしく見る</h2>
+          <div class="field" style="max-width:200px">
+            <label class="lbl sr-only" for="d-viewYear">表示する年</label>
+            <select id="d-viewYear"></select>
+          </div>
+          <div class="stat-row" id="d-yStats" style="margin-top:14px"></div>
+          <div class="chart-title" style="margin-top:18px">この年の年収のゆくえ</div>
+          <div class="chart-wrap" id="d-yearBar"></div>
+          <div class="legend" id="d-yearLegend"></div>
         </div>
-        <p class="chart-note">住民税は前年の所得に対して翌年払うため、1年目は0円・2年目から発生します。</p>
+        <div class="card">
+          <h2>月々のお金の流れ <span class="sub" id="d-budgetSub"></span></h2>
+          <div id="d-budget"></div>
+        </div>
+        <div id="d-yCallouts"></div>
       </div>
     </div>
+  </div>
+
+  <div class="card" style="margin-top:22px">
+    <h2>コラム: ライフイベントとお金の目安</h2>
+    <p class="hint" style="margin-bottom:12px">就職してからの「大きな出費」のざっくり相場です。気になるものは年を選んで「単発の支出」に足すと、上のシミュレーションに反映されます(入力の細かさ「こだわり」で編集できます)。</p>
+    <div class="life-grid" id="d-lifeGrid"></div>
+    <p class="chart-note">金額は各種調査の平均値を丸めた目安。地域やスタイルで大きく変わります。子育て費は単発ではなく「毎月の生活費 +10〜15万円/月」のイメージでどうぞ。</p>
   </div>
 </section>
 
@@ -843,28 +900,25 @@ function calcYear(p) {
   return { taxableGross, bonusAnnual, si, incomeTax, residentTax, net, idecoY, mf };
 }
 
-// 年収ポイント([{year, annual}])から各年の年収を複利補間で返す関数を作る
+// 年収ポイント([{year, annual}]・年昇順)から各年の年収を返す関数を作る。
+// 指定した年に一気に上がり、次のポイントまではその金額のまま(階段状)。
 function annualAtFactory(list) {
   return y => {
-    if (y <= list[0].year || list.length === 1) return list[0].annual;
-    for (let i = 0; i < list.length - 1; i++) {
-      const a = list[i], b = list[i + 1];
-      if (y <= b.year) {
-        return a.annual * Math.pow(b.annual / a.annual, (y - a.year) / (b.year - a.year));
-      }
+    let v = list[0].annual;
+    for (const a of list) {
+      if (a.year <= y) v = a.annual;
+      else break;
     }
-    // 最後のポイント以降は直前区間の伸び率を継続(暴走防止に年1億で頭打ち)
-    const a = list[list.length - 2], b = list[list.length - 1];
-    const g = Math.pow(b.annual / a.annual, 1 / (b.year - a.year));
-    return Math.min(1e8, b.annual * Math.pow(g, y - b.year));
+    return v;
   };
 }
 
 /**
  * 複数年シミュレーション。
- * cfg: { monthly0, bonusMonths, years, age0, otH, otMode('full'|'fixed'), allowHousingM, healthRate, idecoM,
+ * cfg: { monthly0, bonusMonths, years, age0, otH, otMode('full'|'fixed'), healthRate, idecoM,
+ *        allowHousingM(定数) or allowHousingAt(y)=>月額 … 課税される住宅手当
  *        raisePct + promotions:[{year,amount,label}]  … 昇給率方式
- *        annualAt(y)=>年収                            … 年収ポイント方式(基本給+賞与ベース)
+ *        annualAt(y)=>年収                            … 年収ポイント方式(基本給+賞与ベース・階段状)
  *        firstYear: {monthsFactor, bonusFactor} | null … 1年目の入社月按分 }
  * 住民税: 1年目0円、以降は前年の所得から計算。
  */
@@ -884,7 +938,8 @@ function simulateYears(cfg) {
     const otPayM = cfg.otMode === 'full'
       ? monthly / TAXC.scheduledHoursM * 1.25 * (cfg.otH || 0)
       : 0;
-    const allowM = (cfg.allowHousingM || 0) + otPayM;
+    const housingAllowM = cfg.allowHousingAt ? cfg.allowHousingAt(y) : (cfg.allowHousingM || 0);
+    const allowM = housingAllowM + otPayM;
     const first = (y === 1 && cfg.firstYear) ? cfg.firstYear : null;
     const residentTaxOf = (y === 1) ? 0
       : calcResidentTax(prev.taxableGross, prev.si.total, prev.idecoY);
@@ -896,7 +951,7 @@ function simulateYears(cfg) {
       bonusFactor: first ? first.bonusFactor : 1,
     });
     rows.push({
-      year: y, age: cfg.age0 + y - 1, monthly, otPayM,
+      year: y, age: cfg.age0 + y - 1, monthly, otPayM, housingAllowM,
       promo: promos.length ? { label: promos.map(p => p.label).filter(Boolean).join('・') || '昇進', amount: promos.reduce((s, p) => s + p.amount, 0) } : null,
       ...r,
     });
@@ -957,7 +1012,7 @@ function setRangeFill(input) {
 /* ---------------------------------------------------------------------
    state
 --------------------------------------------------------------------- */
-const STORAGE_KEY = 'shoninkyu-compass-v2';
+const STORAGE_KEY = 'shoninkyu-compass-v3';
 const DEFAULTS = {
   theme: 'auto',
   tab: 'simple',
@@ -980,7 +1035,11 @@ const DEFAULTS = {
       ],
     },
     compare: false, scenario: 'base', scenTime: 1, scenMag: 10,
-    housing: { mode: 'rent', rent: 70000, rentMode: 'fixed', rentPct: 28, rentCap: 0, familyPay: 30000, allowance: 20000, selfPay: 20000 },
+    view: 'multi', viewYear: 1,
+    housingPlans: [
+      { fromYear: 1, mode: 'rent', rentMode: 'fixed', rent: 70000, rentPct: 28, rentCap: 0, familyPay: 30000, allowance: 20000, selfPay: 20000 },
+    ],
+    invest: { monthly: 10000, returnPct: 3 },
     living: {
       food:    { mode: 'fixed', amount: 40000, pct: 15, cap: 80000 },
       util:    { mode: 'fixed', amount: 12000, pct: 4,  cap: 30000 },
@@ -1016,7 +1075,18 @@ function deepMerge(base, over) {
 }
 let state;
 try {
-  state = deepMerge(structuredClone(DEFAULTS), JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'));
+  let stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+  if (!stored) {
+    // v2からの移行: housing単体 → housingPlans[0]
+    const v2 = JSON.parse(localStorage.getItem('shoninkyu-compass-v2') || 'null');
+    if (v2) {
+      stored = v2;
+      if (v2.deep && v2.deep.housing) {
+        stored.deep.housingPlans = [{ ...structuredClone(DEFAULTS.deep.housingPlans[0]), ...v2.deep.housing, fromYear: 1 }];
+      }
+    }
+  }
+  state = deepMerge(structuredClone(DEFAULTS), stored || {});
 } catch (e) { state = structuredClone(DEFAULTS); }
 const saveState = debounce(() => {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* private mode */ }
@@ -1219,13 +1289,15 @@ function renderTrendChart(container, seriesList, opts = {}) {
   container.appendChild(svg);
 }
 
-// 累計貯蓄の柱(正=アクア、負=赤、最終値に直接ラベル)
-function renderCumChart(container, rows) {
+// 資産の柱(現金=アクア、投資=バイオレットの積み上げ。現金マイナスは赤で下向き)
+// milestones: [{i, th}] — 初到達年に旗を立てる
+function renderCumChart(container, rows, milestones = []) {
   container.textContent = '';
-  const W = 720, H = 230, L = 54, R = 16, T = 22, B = 34;
+  const W = 720, H = 240, L = 54, R = 16, T = 30, B = 34, GAP = 2;
   const n = rows.length;
-  const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart-svg', role: 'img', 'aria-label': '累計貯蓄の推移' });
-  const vals = rows.map(r => r.cum / 10000);
+  const hasInvest = rows.some(r => r.invest > 0);
+  const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart-svg', role: 'img', 'aria-label': '資産の推移' });
+  const vals = rows.map(r => r.cum / 10000).concat(rows.map(r => Math.min(0, r.cash / 10000)));
   const minV = Math.min(0, ...vals), maxV = Math.max(0, ...vals);
   const ticks = niceTicks(minV, maxV * 1.1 || 10, 4);
   const lo = ticks[0], hi = ticks[ticks.length - 1];
@@ -1240,39 +1312,82 @@ function renderCumChart(container, rows) {
   const bw = Math.min(24, (W - L - R) / n * 0.55);
   const y0 = ys(0);
   const xStep = Math.max(1, Math.ceil(n / 10));
-  rows.forEach((r, i) => {
-    const v = r.cum / 10000;
-    const yTop = ys(Math.max(0, v)), yBot = ys(Math.min(0, v));
-    const x = xs(i) - bw / 2;
+  // 上端だけ角丸の柱
+  const roundedTop = (x, yTop, yBot) => {
     const hh = Math.max(1, yBot - yTop);
     const rad = Math.min(4, hh / 2);
-    let d;
-    if (v >= 0) {
-      d = `M${x},${y0} L${x},${yTop + rad} Q${x},${yTop} ${x + rad},${yTop} L${x + bw - rad},${yTop} Q${x + bw},${yTop} ${x + bw},${yTop + rad} L${x + bw},${y0} Z`;
+    return `M${x},${yBot} L${x},${yTop + rad} Q${x},${yTop} ${x + rad},${yTop} L${x + bw - rad},${yTop} Q${x + bw},${yTop} ${x + bw},${yTop + rad} L${x + bw},${yBot} Z`;
+  };
+  const roundedBottom = (x, yTop, yBot) => {
+    const hh = Math.max(1, yBot - yTop);
+    const rad = Math.min(4, hh / 2);
+    return `M${x},${yTop} L${x},${yBot - rad} Q${x},${yBot} ${x + rad},${yBot} L${x + bw - rad},${yBot} Q${x + bw},${yBot} ${x + bw},${yBot - rad} L${x + bw},${yTop} Z`;
+  };
+  rows.forEach((r, i) => {
+    const x = xs(i) - bw / 2;
+    const cashV = r.cash / 10000, invV = r.invest / 10000;
+    const hover = ev => {
+      const list = [];
+      if (hasInvest) {
+        list.push({ label: '現金貯蓄', value: fmtMan(r.cash, 0), color: '#1baf7a' });
+        list.push({ label: '投資評価額', value: fmtMan(r.invest, 0), color: '#4a3aa7' });
+        list.push({ label: 'うち運用益(累計)', value: '+' + fmtMan(r.gain, 0) });
+      }
+      list.push({ label: 'その年の収支', value: (r.balance >= 0 ? '+' : '') + fmtMan(r.balance, 0) });
+      list.push({ label: '資産合計', value: fmtMan(r.cum, 0) });
+      tip.show(ttRows(r.year + '年目', list), ev.clientX, ev.clientY);
+    };
+    const attach = el => {
+      el.addEventListener('pointerenter', hover);
+      el.addEventListener('pointermove', ev => tip.move(ev.clientX, ev.clientY));
+      el.addEventListener('pointerleave', () => tip.hide());
+      svg.appendChild(el);
+    };
+    if (cashV >= 0) {
+      const yCash = ys(cashV);
+      if (invV > 0) {
+        // 積み上げ: 下=現金(角丸なし)、上=投資(上端角丸)。2pxのサーフェスギャップ
+        if (cashV > 0) attach(sv('rect', { x, y: yCash, width: bw, height: Math.max(1, y0 - yCash), fill: SERIES.keep, class: 'bar-seg' }));
+        const yTop = ys(cashV + invV);
+        attach(sv('path', { d: roundedTop(x, yTop, Math.max(yTop + 1, yCash - GAP)), fill: SERIES.rtax, class: 'bar-seg' }));
+      } else if (cashV > 0) {
+        attach(sv('path', { d: roundedTop(x, yCash, y0), fill: SERIES.keep, class: 'bar-seg' }));
+      }
     } else {
-      d = `M${x},${y0} L${x},${yBot - rad} Q${x},${yBot} ${x + rad},${yBot} L${x + bw - rad},${yBot} Q${x + bw},${yBot} ${x + bw},${yBot - rad} L${x + bw},${y0} Z`;
+      // 現金マイナス: ゼロ線の下に赤、投資は上に
+      attach(sv('path', { d: roundedBottom(x, y0, ys(cashV)), fill: SERIES.neg, class: 'bar-seg' }));
+      if (invV > 0) attach(sv('path', { d: roundedTop(x, ys(invV), y0 - GAP), fill: SERIES.rtax, class: 'bar-seg' }));
     }
-    const bar = sv('path', { d, fill: v >= 0 ? SERIES.keep : SERIES.neg, class: 'bar-seg' });
-    bar.addEventListener('pointerenter', ev => tip.show(ttRows(r.year + '年目', [
-      { label: 'その年の収支', value: (r.balance >= 0 ? '+' : '') + fmtMan(r.balance, 0) },
-      { label: '累計貯蓄', value: fmtMan(r.cum, 0) },
-    ]), ev.clientX, ev.clientY));
-    bar.addEventListener('pointermove', ev => tip.move(ev.clientX, ev.clientY));
-    bar.addEventListener('pointerleave', () => tip.hide());
-    svg.appendChild(bar);
     if (i % xStep === 0 || i === n - 1) {
       const lab = sv('text', { x: xs(i), y: H - B + 18, 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--muted)' });
       lab.textContent = r.year + '年目';
       svg.appendChild(lab);
     }
   });
+  // マイルストーン旗(初到達年)
+  let flagTops = {};
+  for (const m of milestones) {
+    const r = rows[m.i];
+    const x = xs(m.i);
+    const barTop = ys(Math.max(0, Math.max(r.cum, r.invest)) / 10000);
+    const t = barTop - 24;
+    svg.appendChild(sv('line', { x1: x, x2: x, y1: barTop - 3, y2: t, stroke: 'var(--accent)', 'stroke-width': 1.5 }));
+    svg.appendChild(sv('path', { d: `M${x},${t} L${x + 13},${t + 3.5} L${x},${t + 7} Z`, fill: 'var(--accent)' }));
+    const lab = sv('text', { x: x + 16, y: t + 7, 'font-size': 10.5, 'font-weight': 700, fill: 'var(--accent)', class: 'num' });
+    lab.textContent = m.th >= 100000000 ? '1億円' : (m.th / 10000).toLocaleString('ja-JP') + '万';
+    svg.appendChild(lab);
+    flagTops[m.i] = t;
+  }
+  // 最終値ラベル(最終年に旗があれば、その上に逃がす)
   const last = rows[n - 1];
-  const lv = last.cum / 10000;
+  const lv = Math.max(0, last.cum / 10000);
+  let labY = Math.max(14, ys(lv) - 8);
+  if (flagTops[n - 1] != null) labY = Math.max(12, flagTops[n - 1] - 6);
   const lab = sv('text', {
-    x: Math.min(xs(n - 1), W - R - 4), y: Math.max(14, ys(Math.max(0, lv)) - 8),
+    x: Math.min(xs(n - 1), W - R - 4), y: labY,
     'text-anchor': 'end', 'font-size': 12.5, 'font-weight': 900, fill: 'var(--ink)', class: 'num',
   });
-  lab.textContent = '累計 ' + manNum(last.cum, 0) + '万円';
+  lab.textContent = '資産 ' + manNum(last.cum, 0) + '万円';
   svg.appendChild(lab);
   container.appendChild(svg);
 }
@@ -1549,16 +1664,18 @@ function deepPay(d) {
   return { monthly: d.monthly, bonusMonths: d.bonusMonths, firstAnnual: d.monthly * (12 + d.bonusMonths) };
 }
 
-function housingOf(d) {
-  // allowM: 課税される手当(月)。自己負担は年次計算側で(家賃連動対応のため)
-  const hz = d.housing;
-  switch (hz.mode) {
-    case 'home': return { selfPayM: hz.familyPay, allowM: 0 };
-    case 'rent': return { selfPayM: hz.rent, allowM: 0 };
-    case 'allowance': return { selfPayM: hz.rent, allowM: hz.allowance };
-    case 'shataku': return { selfPayM: hz.selfPay, allowM: 0 };
-  }
-  return { selfPayM: 0, allowM: 0 };
+// その年に適用される住まいプラン(fromYear ≤ y の最後のもの)
+function housingPlanAt(d, y) {
+  let p = d.housingPlans[0];
+  for (const q of d.housingPlans) if (q.fromYear <= y) p = q;
+  return p;
+}
+// 課税される住宅手当(月)を年ごとに返す
+function housingAllowAt(d) {
+  return y => {
+    const p = housingPlanAt(d, y);
+    return p.mode === 'allowance' ? p.allowance : 0;
+  };
 }
 
 // シナリオごとのキャリア設定を返す
@@ -1589,35 +1706,40 @@ function careerFor(d, which) {
   return { raisePct: g.raisePct, promotions: g.promotions };
 }
 
-// 1シナリオ分の年次データ(給与+生活費+収支)
+// 1シナリオ分の年次データ(給与+生活費+収支+資産)
 function deepRows(which) {
   const d = state.deep;
   const pay = deepPay(d);
-  const hz = housingOf(d);
   const rows = simulateYears({
     monthly0: pay.monthly, bonusMonths: pay.bonusMonths,
     ...careerFor(d, which),
     years: d.years, age0: d.age,
-    otH: d.otH, otMode: d.otMode, allowHousingM: hz.allowM,
+    otH: d.otH, otMode: d.otMode, allowHousingAt: housingAllowAt(d),
     healthRate: d.healthRate / 100, idecoM: d.ideco * 10000,
     firstYear: d.firstYearPartial ? { monthsFactor: 9 / 12, bonusFactor: 0.5 } : null,
   });
   const infl = (d.livingInflationPct || 0) / 100;
-  let cum = 0;
+  const investM = d.invest.monthly || 0;
+  const ret = (d.invest.returnPct || 0) / 100;
+  let cash = 0, investBal = 0, gain = 0;
   for (const r of rows) {
     const months = 12 * r.mf;
     // 月例手取り(賞与除く): 控除を月給比で按分
-    const monthlyPlus = r.monthly + hz.allowM + r.otPayM;
+    const monthlyPlus = r.monthly + r.housingAllowM + r.otPayM;
     const monthlyPart = monthlyPlus * months / Math.max(1, r.taxableGross);
     r.netMEx = (monthlyPlus * months - (r.si.total + r.incomeTax + r.residentTax) * monthlyPart) / months;
     const grow = Math.pow(1 + infl, r.year - 1);
-    // 住まいの自己負担(月)
+    // 住まいの自己負担(月)— その年のプランで決まる
+    const plan = housingPlanAt(d, r.year);
     let houseM;
-    if (d.housing.mode === 'rent' && d.housing.rentMode === 'ratio') {
-      houseM = r.netMEx * d.housing.rentPct / 100;
-      if (d.housing.rentCap > 0) houseM = Math.min(houseM, d.housing.rentCap);
+    if (plan.mode === 'rent' && plan.rentMode === 'ratio') {
+      houseM = r.netMEx * plan.rentPct / 100;
+      if (plan.rentCap > 0) houseM = Math.min(houseM, plan.rentCap);
     } else {
-      houseM = hz.selfPayM * grow;
+      const base = plan.mode === 'home' ? plan.familyPay
+        : plan.mode === 'shataku' ? plan.selfPay
+        : plan.rent; // rent(固定)・allowance は家賃全額が自己負担
+      houseM = base * grow;
     }
     // 生活費(月)
     const items = [['住まい(自己負担)', houseM]];
@@ -1641,8 +1763,16 @@ function deepRows(which) {
     r.oneOffs = oneOffs;
     r.items = items;
     r.balance = r.net - r.spend;
-    cum += r.balance;
-    r.cum = cum;
+    // 資産: 毎月の積立投資は現金から拠出し、投資残高は年利で複利成長
+    const contrib = investM * months;
+    const g = investBal * ret;
+    investBal += g + contrib;
+    gain += g;
+    cash += r.balance - contrib;
+    r.cash = cash;
+    r.invest = investBal;
+    r.gain = gain;
+    r.cum = cash + investBal;
   }
   return rows;
 }
@@ -1776,65 +1906,99 @@ function renderDeepOneoffs() {
   });
 }
 
-function renderDeepHousingFields() {
+// 住まいの期間プランUI(1つ目は「1年目から」固定、以降は「◯年目から」で追加)
+function renderDeepHousing() {
   const d = state.deep;
-  const chips = $('d-housingChips');
-  chips.innerHTML = '';
-  for (const [val, label] of HOUSING_MODES) {
-    const b = h('button', 'chip', label);
-    b.setAttribute('aria-pressed', String(d.housing.mode === val));
-    b.addEventListener('click', () => { d.housing.mode = val; renderDeepHousingFields(); renderDeep(); saveState(); });
-    chips.appendChild(b);
-  }
-  const box = $('d-housingFields');
+  const box = $('d-housingPlans');
   box.innerHTML = '';
   const onchange = () => { renderDeep(); saveState(); };
-  switch (d.housing.mode) {
-    case 'home':
-      sliderNumField(box, { label: '家に入れるお金(月)', min: 0, max: 200000, step: 5000, numMax: 100, get: () => d.housing.familyPay, set: v => { d.housing.familyPay = v; }, onchange, hint: '実家暮らしでも生活費として入れる人が多め。0円でもOK。' });
-      break;
-    case 'rent': {
-      // 決め方: 金額指定 or 手取り連動
-      const tg = h('div', 'field lv2');
-      const head = h('div', 'field-head');
-      head.appendChild(h('span', 'lbl', '家賃の決め方'));
-      const mt = h('span', 'mini-toggle');
-      for (const [val, label] of [['fixed', '金額で指定'], ['ratio', '手取りの%で決める']]) {
-        const b = h('button', null, label);
-        b.setAttribute('aria-pressed', String(d.housing.rentMode === val));
-        b.addEventListener('click', () => { d.housing.rentMode = val; renderDeepHousingFields(); renderDeep(); saveState(); });
-        mt.appendChild(b);
+  d.housingPlans.forEach((plan, idx) => {
+    const wrap = h('div', 'subfields' + (idx > 0 ? ' lv2' : ''));
+    wrap.style.marginBottom = '12px';
+    // 期間ヘッダ
+    const head = h('div', 'field-head');
+    head.style.marginBottom = '10px';
+    if (idx === 0) {
+      head.appendChild(h('span', 'lbl', '1年目から'));
+    } else {
+      const l = h('span', 'lbl');
+      const sel = document.createElement('select');
+      sel.style.width = '96px';
+      for (let y = 2; y <= 30; y++) {
+        const o = document.createElement('option');
+        o.value = y; o.textContent = y + '年目';
+        if (plan.fromYear === y) o.selected = true;
+        sel.appendChild(o);
       }
-      head.appendChild(mt);
-      tg.appendChild(head);
-      box.appendChild(tg);
-      if (d.housing.rentMode === 'ratio') {
-        const f = h('div', 'field');
-        const fh = h('div', 'field-head');
-        fh.appendChild(h('span', 'lbl', '家賃 = 月例手取りの'));
-        const wrap = h('span', 'head-input');
-        const pctIn = document.createElement('input');
-        Object.assign(pctIn, { type: 'number', min: 5, max: 60, step: 1, value: d.housing.rentPct });
-        pctIn.addEventListener('input', () => { d.housing.rentPct = clampN(+pctIn.value || 28, 5, 60); onchange(); });
-        wrap.appendChild(pctIn);
-        wrap.appendChild(h('span', 'u', '%'));
-        fh.appendChild(wrap);
-        f.appendChild(fh);
-        box.appendChild(f);
-        sliderNumField(box, { label: '家賃の上限(0=なし)', min: 0, max: 300000, step: 5000, numMax: 100, get: () => d.housing.rentCap, set: v => { d.housing.rentCap = v; }, onchange, hint: '手取りが増えると家賃も上がる想定。昇給に合わせて住み替えるイメージです。' });
-      } else {
-        sliderNumField(box, { label: '家賃(月)', min: 20000, max: 400000, step: 5000, numMax: 200, get: () => d.housing.rent, set: v => { d.housing.rent = v; }, onchange });
-      }
-      break;
+      sel.setAttribute('aria-label', 'この住まいに変わる年');
+      sel.addEventListener('change', () => { plan.fromYear = +sel.value; onchange(); });
+      l.append(sel, ' から');
+      head.appendChild(l);
+      const del = h('button', 'btn-x', '×');
+      del.setAttribute('aria-label', 'この住まいプランを削除');
+      del.addEventListener('click', () => { d.housingPlans.splice(idx, 1); renderDeepHousing(); renderDeep(); saveState(); });
+      head.appendChild(del);
     }
-    case 'allowance':
-      sliderNumField(box, { label: '家賃(月)', min: 20000, max: 400000, step: 5000, numMax: 200, get: () => d.housing.rent, set: v => { d.housing.rent = v; }, onchange });
-      sliderNumField(box, { label: '住宅手当(月)', min: 0, max: 150000, step: 5000, numMax: 50, get: () => d.housing.allowance, set: v => { d.housing.allowance = v; }, onchange, hint: '手当は給与に上乗せ=課税・社会保険の対象になります。' });
-      break;
-    case 'shataku':
-      sliderNumField(box, { label: '自己負担(月)', min: 0, max: 300000, step: 5000, numMax: 100, get: () => d.housing.selfPay, set: v => { d.housing.selfPay = v; }, onchange, hint: '会社負担分は原則非課税。家賃との差額がまるごと浮きます。' });
-      break;
-  }
+    wrap.appendChild(head);
+    // 形態チップ
+    const chips = h('div', 'chips');
+    chips.style.marginBottom = '10px';
+    for (const [val, label] of HOUSING_MODES) {
+      const b = h('button', 'chip chip-sm', label);
+      b.setAttribute('aria-pressed', String(plan.mode === val));
+      b.addEventListener('click', () => { plan.mode = val; renderDeepHousing(); renderDeep(); saveState(); });
+      chips.appendChild(b);
+    }
+    wrap.appendChild(chips);
+    // 形態別フィールド
+    switch (plan.mode) {
+      case 'home':
+        sliderNumField(wrap, { label: '家に入れるお金(月)', min: 0, max: 200000, step: 5000, numMax: 100, get: () => plan.familyPay, set: v => { plan.familyPay = v; }, onchange, hint: '実家暮らしでも生活費として入れる人が多め。0円でもOK。' });
+        break;
+      case 'rent': {
+        const tg = h('div', 'field lv2');
+        const th2 = h('div', 'field-head');
+        th2.appendChild(h('span', 'lbl', '家賃の決め方'));
+        const mt = h('span', 'mini-toggle');
+        for (const [val, label] of [['fixed', '金額で指定'], ['ratio', '手取りの%']]) {
+          const b = h('button', null, label);
+          b.setAttribute('aria-pressed', String(plan.rentMode === val));
+          b.addEventListener('click', () => { plan.rentMode = val; renderDeepHousing(); renderDeep(); saveState(); });
+          mt.appendChild(b);
+        }
+        th2.appendChild(mt);
+        tg.appendChild(th2);
+        wrap.appendChild(tg);
+        if (plan.rentMode === 'ratio') {
+          const f = h('div', 'field');
+          const fh = h('div', 'field-head');
+          fh.appendChild(h('span', 'lbl', '家賃 = 月例手取りの'));
+          const hi = h('span', 'head-input');
+          const pctIn = document.createElement('input');
+          Object.assign(pctIn, { type: 'number', min: 5, max: 60, step: 1, value: plan.rentPct });
+          pctIn.setAttribute('aria-label', '家賃の手取り比率(%)');
+          pctIn.addEventListener('input', () => { plan.rentPct = clampN(+pctIn.value || 28, 5, 60); onchange(); });
+          hi.appendChild(pctIn);
+          hi.appendChild(h('span', 'u', '%'));
+          fh.appendChild(hi);
+          f.appendChild(fh);
+          wrap.appendChild(f);
+          sliderNumField(wrap, { label: '家賃の上限(0=なし)', min: 0, max: 300000, step: 5000, numMax: 100, get: () => plan.rentCap, set: v => { plan.rentCap = v; }, onchange, hint: '手取りが増えると家賃もいっしょに上がる想定です。' });
+        } else {
+          sliderNumField(wrap, { label: '家賃(月)', min: 20000, max: 400000, step: 5000, numMax: 200, get: () => plan.rent, set: v => { plan.rent = v; }, onchange });
+        }
+        break;
+      }
+      case 'allowance':
+        sliderNumField(wrap, { label: '家賃(月)', min: 20000, max: 400000, step: 5000, numMax: 200, get: () => plan.rent, set: v => { plan.rent = v; }, onchange });
+        sliderNumField(wrap, { label: '住宅手当(月)', min: 0, max: 150000, step: 5000, numMax: 50, get: () => plan.allowance, set: v => { plan.allowance = v; }, onchange, hint: '手当は給与に上乗せ=課税・社会保険の対象になります。' });
+        break;
+      case 'shataku':
+        sliderNumField(wrap, { label: '自己負担(月)', min: 0, max: 300000, step: 5000, numMax: 100, get: () => plan.selfPay, set: v => { plan.selfPay = v; }, onchange, hint: '会社負担分は原則非課税。家賃との差額がまるごと浮きます。' });
+        break;
+    }
+    box.appendChild(wrap);
+  });
 }
 
 function renderDeepLiving() {
@@ -1918,6 +2082,27 @@ function renderDeepLiving() {
   }
 }
 
+const MILESTONES = [1000000, 5000000, 10000000, 30000000, 50000000, 100000000];
+function milestonesOf(rows) {
+  const byYear = new Map(); // 同じ年に複数到達したら大きい方だけ旗にする
+  for (const th of MILESTONES) {
+    const i = rows.findIndex(r => r.cum >= th);
+    if (i >= 0) byYear.set(i, th);
+  }
+  return [...byYear.entries()].map(([i, th]) => ({ i, th }));
+}
+
+function makeStat(container, label, build, sub, hero) {
+  const div = h('div', 'stat' + (hero ? ' hero' : ''));
+  div.appendChild(h('div', 's-label', label));
+  const v = h('div', 's-value num');
+  build(v);
+  div.appendChild(v);
+  if (sub) div.appendChild(h('div', 's-sub', sub));
+  container.appendChild(div);
+}
+const uMan = () => Object.assign(h('span', 'u'), { textContent: '万円' });
+
 function renderDeep() {
   const d = state.deep;
   const compare = d.compare;
@@ -1926,45 +2111,43 @@ function renderDeep() {
   const rowsPes = compare ? deepRows('pes') : null;
   if (!compare) d.scenario = 'base';
   const active = d.scenario === 'opt' && rowsOpt ? rowsOpt : d.scenario === 'pes' && rowsPes ? rowsPes : rowsBase;
-  const y1 = active[0];
-  const last = active[active.length - 1];
-  const monthlyNet1 = y1.netMEx;
-  lastNetM1 = monthlyNet1;
-  const monthlyBalance = monthlyNet1 - y1.spendM;
+  lastNetM1 = rowsBase[0].netMEx;
   const scenLabel = { base: '標準', opt: '楽観', pes: '悲観' }[d.scenario];
 
-  // シナリオ切替バー
+  // ビュー切替とシナリオ切替
+  chipGroup($('d-viewChips'), [['multi', '複数年のシミュレーション'], ['single', '1年ずつくわしく']],
+    v => v === d.view, v => { d.view = v; renderDeep(); saveState(); }, true);
+  $('d-multiView').hidden = d.view !== 'multi';
+  $('d-singleView').hidden = d.view !== 'single';
   $('d-scenBar').hidden = !compare;
   if (compare) {
     chipGroup($('d-scenChips'), SCENARIOS, v => v === d.scenario,
       v => { d.scenario = v; renderDeep(); saveState(); }, true);
   }
 
-  // stats
+  // 生活費合計(左カラム・1年目ベース)
+  const y1 = active[0];
+  $('d-livingTotal').textContent = fmtMan(y1.spendM - y1.items[0][1], 1) + ' + 住まい ' + fmtMan(y1.items[0][1], 1);
+
+  renderDeepMulti(d, rowsBase, rowsOpt, rowsPes, active, compare, scenLabel);
+  renderDeepSingle(d, active, compare, scenLabel);
+}
+
+/* ---- 複数年ビュー ---- */
+function renderDeepMulti(d, rowsBase, rowsOpt, rowsPes, active, compare, scenLabel) {
+  const y1 = active[0];
+  const last = active[active.length - 1];
+  const hasInvest = d.invest.monthly > 0;
+
   const stats = $('d-stats');
   stats.innerHTML = '';
-  const stat = (label, build, sub, hero) => {
-    const div = h('div', 'stat' + (hero ? ' hero' : ''));
-    div.appendChild(h('div', 's-label', label));
-    const v = h('div', 's-value num');
-    build(v);
-    div.appendChild(v);
-    if (sub) div.appendChild(h('div', 's-sub', sub));
-    stats.appendChild(div);
-  };
-  const u = () => Object.assign(h('span', 'u'), { textContent: '万円' });
-  stat(d.years + '年間の貯蓄' + (compare ? '(' + scenLabel + ')' : ''), v => { v.append(manNum(last.cum, 0), u()); },
-    '最終年の月給 ' + fmtMan(last.monthly, 1), true);
-  stat('1年目の手取り', v => { v.append(manNum(y1.net, 0), u()); },
+  makeStat(stats, d.years + '年間の資産' + (compare ? '(' + scenLabel + ')' : ''),
+    v => { v.append(manNum(last.cum, 0), uMan()); },
+    hasInvest ? 'うち投資の運用益 +' + fmtMan(last.gain, 0) : '毎年の「手取り − 支出」の積み上げ', true);
+  makeStat(stats, '最終年の手取り(年)', v => { v.append(manNum(last.net, 0), uMan()); },
+    '月給 ' + fmtMan(last.monthly, 1) + '・額面 ' + fmtMan(last.taxableGross, 0));
+  makeStat(stats, '1年目の手取り', v => { v.append(manNum(y1.net, 0), uMan()); },
     '額面 ' + fmtMan(y1.taxableGross, 0) + (d.firstYearPartial ? '(4月入社・9ヶ月分)' : '(残業代込み)'));
-  stat('月々の残り(1年目)', v => {
-    v.append((monthlyBalance >= 0 ? '+' : '−') + manNum(Math.abs(monthlyBalance), 1), u());
-    v.style.color = monthlyBalance >= 0 ? 'var(--good-text)' : 'var(--bad-text)';
-  }, '手取り月 ' + fmtMan(monthlyNet1, 1) + ' − 支出 ' + fmtMan(y1.spendM, 1));
-  const hoursY1 = (TAXC.scheduledHoursM + d.otH) * 12 * y1.mf;
-  stat('手取り時給(1年目)', v => {
-    v.append(Math.round(y1.net / hoursY1).toLocaleString('ja-JP'), Object.assign(h('span', 'u'), { textContent: '円' }));
-  }, '額面 ' + Math.round(y1.taxableGross / hoursY1).toLocaleString('ja-JP') + '円/時・残業込み年' + Math.round(hoursY1).toLocaleString('ja-JP') + 'h');
 
   // シナリオ比較サマリー
   $('d-scenSummary').hidden = !compare;
@@ -1990,7 +2173,7 @@ function renderDeep() {
     }
   }
 
-  // callouts
+  // callouts(複数年の話題)
   const co = $('d-callouts');
   co.innerHTML = '';
   if (active.length >= 2 && active[1].net < active[0].net && !d.firstYearPartial) {
@@ -2000,40 +2183,15 @@ function renderDeep() {
       fmtMan(active[0].net, 0) + ' → <strong>' + fmtMan(active[1].net, 0) + '</strong> に一度下がります。1年目の感覚でお金を使うと苦しくなりがち。';
     co.appendChild(c);
   }
-  if (monthlyBalance < 0) {
-    const yearlyOk = y1.balance >= 0;
-    const c = h('div', 'callout' + (yearlyOk ? '' : ' warn'));
-    c.innerHTML = yearlyOk
-      ? '<div class="co-title">💡 月々は赤字、賞与でカバー型</div>月単位では ' + fmtMan(Math.abs(monthlyBalance), 1) + ' の赤字ですが、賞与を含めた年間では ' +
-        '<strong>+' + fmtMan(y1.balance, 0) + '</strong>。賞与が減ると一気に苦しくなる家計なので、固定費は控えめが安心です。'
-      : '<div class="co-title">⚠ 年間でも赤字です</div>1年目は年間 <strong>' + fmtMan(Math.abs(y1.balance), 0) + '</strong> の赤字。家賃か固定費を見直すか、収入条件を再検討しましょう。';
+  const deficits = active.filter(r => r.balance < 0);
+  if (deficits.length) {
+    const c = h('div', 'callout' + (last.cum < 0 ? ' warn' : ''));
+    const yearsTxt = deficits.slice(0, 3).map(r => r.year + '年目').join('・') + (deficits.length > 3 ? ' など' : '');
+    c.innerHTML = '<div class="co-title">' + (last.cum < 0 ? '⚠' : '💡') + ' 年間赤字の年があります</div>' +
+      yearsTxt + ' は支出が手取りを上回ります(単発支出や生活費の設定によるもの)。' +
+      (last.cum < 0 ? '最終的に資産もマイナスなので、プランの見直しを。' : '資産の積み上がりが一時的に凹みます。');
     co.appendChild(c);
   }
-
-  // 生活費合計
-  $('d-livingTotal').textContent = fmtMan(y1.spendM - y1.items[0][1], 1) + ' + 住まい ' + fmtMan(y1.items[0][1], 1);
-
-  // budget bars
-  const bud = $('d-budget');
-  bud.innerHTML = '';
-  for (const [label, v] of y1.items) {
-    const row = h('div', 'bud-row');
-    row.appendChild(h('span', 'bud-label', label));
-    const track = h('div', 'bud-track');
-    const fill = h('div', 'bud-fill');
-    fill.style.width = clampN(v / Math.max(1, monthlyNet1) * 100, 0, 100) + '%';
-    track.appendChild(fill);
-    row.appendChild(track);
-    row.appendChild(h('span', 'bud-val num', fmtMan(v, 1)));
-    bud.appendChild(row);
-  }
-  const sum = h('div', 'bud-sum');
-  sum.appendChild(h('span', null, '手取り ' + fmtMan(monthlyNet1, 1) + ' − 支出 ' + fmtMan(y1.spendM, 1)));
-  const rest = h('span', 'num', '残り ' + (monthlyBalance >= 0 ? '+' : '−') + fmtMan(Math.abs(monthlyBalance), 1));
-  rest.style.color = monthlyBalance >= 0 ? 'var(--good-text)' : 'var(--bad-text)';
-  sum.appendChild(rest);
-  bud.appendChild(sum);
-  bud.appendChild(h('p', 'chart-note', 'バーの長さは月例手取り(賞与除く)に対する割合。賞与(手取り 約' + fmtMan(Math.max(0, y1.net - monthlyNet1 * 12 * y1.mf), 0) + '/年)と単発支出は月々には含めていません。'));
 
   // charts
   if (compare) {
@@ -2060,10 +2218,14 @@ function renderDeep() {
       { label: '昇進の年', color: SERIES.keep },
     ]);
   }
-  renderCumChart($('d-cum'), active);
-  $('d-cumNote').textContent = (compare ? '「' + scenLabel + '」シナリオの累計。' : '') + (active.some(r => r.cum < 0)
-    ? '赤いバーは累計がマイナス(貯金を取り崩している状態)です。'
-    : '毎年の「手取り − 支出」を積み上げた概算です。昇給・昇進で後半ほど貯まりやすくなります。');
+  renderCumChart($('d-cum'), active, milestonesOf(active));
+  makeLegend($('d-cumLegend'), hasInvest ? [
+    { label: '現金貯蓄', color: SERIES.keep },
+    { label: '投資評価額', color: SERIES.rtax },
+  ] : []);
+  $('d-cumNote').textContent = (compare ? '「' + scenLabel + '」シナリオの推移。' : '') + (active.some(r => r.cash < 0)
+    ? '赤いバーは現金がマイナス(貯金の取り崩し超過)です。'
+    : '旗は資産の節目に初めて届いた年。昇給・昇進・運用で後半ほど貯まりやすくなります。');
 
   // year table
   const tb = $('d-yearTable');
@@ -2088,6 +2250,166 @@ function renderDeep() {
     ];
     tds.forEach(([text, cls]) => tr.appendChild(h('td', (cls + ' num').trim(), text)));
     tb.appendChild(tr);
+  }
+
+  // N年後のあなた
+  $('d-futureTitle').textContent = d.years + '年後のあなたへ' + (compare ? '(' + scenLabel + 'シナリオ)' : '');
+  const fb = $('d-futureBody');
+  fb.textContent = '';
+  let text = last.age + '歳。月給は' + fmtMan(last.monthly, 1) + '、手取り年収は' + fmtMan(last.net, 0) + '。';
+  if (last.cum < 0) {
+    text += 'ただ、資産は ' + fmtMan(last.cum, 0) + ' とマイナス…。支出プランか収入条件を見直して、もう一度シミュレーションしてみましょう。';
+  } else {
+    text += '資産は ' + fmtMan(last.cum, 0) + (hasInvest && last.gain > 0 ? '(うち運用益 +' + fmtMan(last.gain, 0) + ')' : '') + ' まで育ちました。';
+    if (last.cum >= 2000000) text += '世界一周旅行(約200万円)' + Math.floor(last.cum / 2000000) + '回分です。';
+    else if (last.cum > 100000) text += '沖縄旅行(約10万円)' + Math.floor(last.cum / 100000) + '回分です。';
+    const nextTh = MILESTONES.find(th => th > last.cum);
+    const n = active.length;
+    if (nextTh && n >= 2) {
+      const pace = (last.cum - active[Math.max(0, n - 4)].cum) / Math.min(3, n - 1);
+      if (pace > 0) {
+        const yearsLeft = Math.ceil((nextTh - last.cum) / pace);
+        if (yearsLeft <= 30) {
+          text += 'このペースなら、あと約' + yearsLeft + '年で' + (nextTh >= 100000000 ? '1億円' : manNum(nextTh, 0) + '万円') + 'に届きます。';
+        }
+      }
+    }
+  }
+  fb.textContent = text;
+}
+
+/* ---- 単年ビュー ---- */
+function renderDeepSingle(d, active, compare, scenLabel) {
+  // 年セレクタ
+  const sel = $('d-viewYear');
+  const y = clampN(d.viewYear || 1, 1, active.length);
+  d.viewYear = y;
+  sel.innerHTML = '';
+  for (const r of active) {
+    const o = document.createElement('option');
+    o.value = r.year;
+    o.textContent = r.year + '年目(' + r.age + '歳)';
+    if (r.year === y) o.selected = true;
+    sel.appendChild(o);
+  }
+  const r = active[y - 1];
+  const monthlyBalance = r.netMEx - r.spendM;
+
+  const stats = $('d-yStats');
+  stats.innerHTML = '';
+  makeStat(stats, y + '年目の手取り(年)' + (compare ? '・' + scenLabel : ''), v => { v.append(manNum(r.net, 0), uMan()); },
+    '額面 ' + fmtMan(r.taxableGross, 0) + '・住民税 ' + fmtMan(r.residentTax, 1));
+  makeStat(stats, '月々の残り', v => {
+    v.append((monthlyBalance >= 0 ? '+' : '−') + manNum(Math.abs(monthlyBalance), 1), uMan());
+    v.style.color = monthlyBalance >= 0 ? 'var(--good-text)' : 'var(--bad-text)';
+  }, '手取り月 ' + fmtMan(r.netMEx, 1) + ' − 支出 ' + fmtMan(r.spendM, 1));
+  const hours = (TAXC.scheduledHoursM + d.otH) * 12 * r.mf;
+  makeStat(stats, '手取り時給', v => {
+    v.append(Math.round(r.net / hours).toLocaleString('ja-JP'), Object.assign(h('span', 'u'), { textContent: '円' }));
+  }, '額面 ' + Math.round(r.taxableGross / hours).toLocaleString('ja-JP') + '円/時・残業込み年' + Math.round(hours).toLocaleString('ja-JP') + 'h');
+
+  // この年の内訳帯
+  renderBreakdownBar($('d-yearBar'), [
+    { label: '手取り', value: r.net, color: SERIES.keep, labelInside: true },
+    { label: '社会保険料', value: r.si.total, color: SERIES.si },
+    { label: '所得税', value: r.incomeTax, color: SERIES.itax },
+    { label: '住民税', value: r.residentTax, color: SERIES.rtax },
+  ], r.taxableGross);
+  makeLegend($('d-yearLegend'), [
+    { label: '手取り', color: SERIES.keep, value: fmtMan(r.net, 0) },
+    { label: '社会保険料', color: SERIES.si, value: fmtMan(r.si.total, 0) },
+    { label: '所得税', color: SERIES.itax, value: fmtMan(r.incomeTax, 1) },
+    { label: '住民税', color: SERIES.rtax, value: fmtMan(r.residentTax, 1) },
+  ]);
+
+  // 月々のお金の流れ(選択年)
+  $('d-budgetSub').textContent = y + '年目・賞与は含まず';
+  const bud = $('d-budget');
+  bud.innerHTML = '';
+  for (const [label, v] of r.items) {
+    const row = h('div', 'bud-row');
+    row.appendChild(h('span', 'bud-label', label));
+    const track = h('div', 'bud-track');
+    const fill = h('div', 'bud-fill');
+    fill.style.width = clampN(v / Math.max(1, r.netMEx) * 100, 0, 100) + '%';
+    track.appendChild(fill);
+    row.appendChild(track);
+    row.appendChild(h('span', 'bud-val num', fmtMan(v, 1)));
+    bud.appendChild(row);
+  }
+  const sum = h('div', 'bud-sum');
+  sum.appendChild(h('span', null, '手取り ' + fmtMan(r.netMEx, 1) + ' − 支出 ' + fmtMan(r.spendM, 1)));
+  const rest = h('span', 'num', '残り ' + (monthlyBalance >= 0 ? '+' : '−') + fmtMan(Math.abs(monthlyBalance), 1));
+  rest.style.color = monthlyBalance >= 0 ? 'var(--good-text)' : 'var(--bad-text)';
+  sum.appendChild(rest);
+  bud.appendChild(sum);
+  let note = 'バーの長さは月例手取り(賞与除く)に対する割合。賞与(手取り 約' + fmtMan(Math.max(0, r.net - r.netMEx * 12 * r.mf), 0) + '/年)は月々には含めていません。';
+  if (r.oneOffs.length) note += ' この年の単発支出 ' + fmtMan(r.oneOffs.reduce((s, o) => s + o.amount, 0), 0) + '(' + r.oneOffs.map(o => o.label || '単発').join('・') + ')は年間収支にのみ反映。';
+  bud.appendChild(h('p', 'chart-note', note));
+
+  // callout(この年の月次赤字)
+  const co = $('d-yCallouts');
+  co.innerHTML = '';
+  if (monthlyBalance < 0) {
+    const yearlyOk = r.balance >= 0;
+    const c = h('div', 'callout' + (yearlyOk ? '' : ' warn'));
+    c.innerHTML = yearlyOk
+      ? '<div class="co-title">💡 月々は赤字、賞与でカバー型</div>月単位では ' + fmtMan(Math.abs(monthlyBalance), 1) + ' の赤字ですが、賞与を含めた年間では ' +
+        '<strong>+' + fmtMan(r.balance, 0) + '</strong>。賞与が減ると一気に苦しくなる家計なので、固定費は控えめが安心です。'
+      : '<div class="co-title">⚠ 年間でも赤字です</div>この年は年間 <strong>' + fmtMan(Math.abs(r.balance), 0) + '</strong> の赤字。家賃か固定費を見直すか、収入条件を再検討しましょう。';
+    co.appendChild(c);
+  }
+}
+
+/* ---- ライフイベントのコラム ---- */
+const LIFE_EVENTS = [
+  { name: 'ひとり暮らしの引越し', label: '引越し', amount: 250000, year: 2, desc: '敷金礼金・仲介手数料に家具家電。家賃の4〜5ヶ月分が目安。' },
+  { name: '結婚', label: '結婚', amount: 1500000, year: 5, desc: '婚約〜披露宴〜新婚旅行で総額350万円規模。ご祝儀を引いた自己負担の目安。' },
+  { name: '出産', label: '出産', amount: 100000, year: 6, desc: '出産費用は50万円前後だが、出産育児一時金(50万円)でかなり相殺される。' },
+  { name: '子ども1人を育てる', label: null, amount: null, amountText: '月10〜15万', desc: '22歳まで養育+教育で総額2,000万円規模。単発ではなく毎月の固定費として考える。' },
+  { name: '車を買う', label: '車', amount: 2000000, year: 4, desc: '新車200万円+維持費が月3〜4万円(駐車場・保険・税)。都市部はカーシェアも手。' },
+  { name: 'マイホームの頭金', label: '住宅頭金', amount: 3000000, year: 8, desc: '物件価格の1〜2割が目安。頭金ゼロのローンもあるが、貯蓄があるほど選択肢が広い。' },
+];
+function renderLifeEvents() {
+  const grid = $('d-lifeGrid');
+  grid.innerHTML = '';
+  for (const ev of LIFE_EVENTS) {
+    const item = h('div', 'life-item');
+    item.appendChild(h('div', 'li-name', ev.name));
+    const amt = h('div', 'li-amount num');
+    if (ev.amount != null) {
+      amt.append('約' + manNum(ev.amount, 0));
+      amt.appendChild(h('span', 'u', '万円'));
+    } else {
+      amt.append(ev.amountText);
+      amt.appendChild(h('span', 'u', '円/月'));
+    }
+    item.appendChild(amt);
+    item.appendChild(h('div', 'li-desc', ev.desc));
+    if (ev.amount != null) {
+      const row = h('div', 'li-add');
+      const sel = document.createElement('select');
+      for (let y = 1; y <= 30; y++) {
+        const o = document.createElement('option');
+        o.value = y; o.textContent = y + '年目';
+        if (y === ev.year) o.selected = true;
+        sel.appendChild(o);
+      }
+      sel.setAttribute('aria-label', ev.name + 'をシミュレーションに入れる年');
+      const btn = h('button', 'btn btn-ghost', '単発支出に追加');
+      btn.addEventListener('click', () => {
+        if (state.deep.oneOffs.length >= 12) return;
+        state.deep.oneOffs.push({ year: +sel.value, amount: ev.amount, label: ev.label });
+        renderDeepOneoffs(); renderDeep(); saveState();
+        btn.textContent = '追加しました ✓';
+        setTimeout(() => { btn.textContent = '単発支出に追加'; }, 1600);
+      });
+      row.append(sel, btn);
+      item.appendChild(row);
+    } else {
+      item.appendChild(h('div', 'li-desc', '→ 「毎月の生活費」に織り込むのがおすすめ'));
+    }
+    grid.appendChild(item);
   }
 }
 
@@ -2432,16 +2754,17 @@ function init() {
     d.bonusMonths = state.simple.bonusMonths;
     const lp = renderSimple.lastPlan;
     if (lp) {
-      d.housing.mode = 'rent';
-      d.housing.rentMode = 'fixed';
-      d.housing.rent = Math.round(lp.planVals.rent / 5000) * 5000;
+      const p0 = d.housingPlans[0];
+      p0.mode = 'rent';
+      p0.rentMode = 'fixed';
+      p0.rent = Math.round(lp.planVals.rent / 5000) * 5000;
       const map = { food: 'food', util: 'util', comm: 'comm', social: 'social', cloth: 'cloth', other: 'other' };
       for (const [lk, pk] of Object.entries(map)) {
         d.living[lk].mode = 'fixed';
         d.living[lk].amount = lp.planVals[pk];
       }
     }
-    renderDeepPayFields(); renderDeepHousingFields(); renderDeepLiving(); syncDeepInputs();
+    renderDeepPayFields(); renderDeepHousing(); renderDeepLiving(); syncDeepInputs();
     switchTab('deep');
     saveState();
     scrollTo({ top: 0 });
@@ -2532,13 +2855,35 @@ function init() {
     state.deep.oneOffs.push({ year: Math.min(state.deep.years, 2), amount: 300000, label: '' });
     renderDeepOneoffs(); renderDeep(); saveState();
   });
+  $('d-addHousing').addEventListener('click', () => {
+    const plans = state.deep.housingPlans;
+    if (plans.length >= 4) return;
+    const lastP = plans[plans.length - 1];
+    plans.push({ ...structuredClone(lastP), fromYear: Math.min(30, lastP.fromYear + 3) });
+    renderDeepHousing(); renderDeep(); saveState();
+  });
+  // 貯蓄と投資
+  sliderNumField($('d-investBox'), {
+    label: '積立投資(月)', min: 0, max: 300000, step: 5000, numMax: 100,
+    get: () => state.deep.invest.monthly, set: v => { state.deep.invest.monthly = v; },
+    onchange: () => { renderDeep(); saveState(); },
+  });
+  syncFns.push(bindSliderVal('d-invReturnR', 'd-invReturnVal',
+    () => state.deep.invest.returnPct, v => { state.deep.invest.returnPct = v; },
+    v => v.toFixed(1) + '%', () => { renderDeep(); saveState(); }));
+  // 単年ビューの年セレクタ
+  $('d-viewYear').addEventListener('change', () => {
+    state.deep.viewYear = +$('d-viewYear').value;
+    renderDeep(); saveState();
+  });
   renderDeepPayFields();
   renderDeepCareerFields();
-  renderDeepHousingFields();
+  renderDeepHousing();
   renderDeepPromos();
   renderDeepAnchors();
   renderDeepOneoffs();
   renderDeepLiving();
+  renderLifeEvents();
 
   // ---- comp ----
   const cRentNum = $('c-rentNum'), cRent = $('c-rent');
