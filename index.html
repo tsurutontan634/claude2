@@ -1749,10 +1749,11 @@ function switchTab(name) {
 }
 let renderersReady = false;
 
-function applyTheme() {
+function applyTheme(fromClick) {
   const t = state.theme;
   if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
-  else delete document.documentElement.dataset.theme;
+  else if (fromClick) delete document.documentElement.dataset.theme;
+  // 初期化時の「自動」ではdata-themeに触れない(ホスト側がテーマ印を付ける環境を尊重)
   const btn = $('themeBtn');
   const icons = {
     auto: '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm0 1.5V13.5a5.5 5.5 0 0 1 0-11Z"/></svg>',
@@ -1774,7 +1775,7 @@ function init() {
   applyTheme();
   $('themeBtn').addEventListener('click', () => {
     state.theme = state.theme === 'auto' ? 'light' : state.theme === 'light' ? 'dark' : 'auto';
-    applyTheme(); saveState();
+    applyTheme(true); saveState();
   });
 
   // simple
