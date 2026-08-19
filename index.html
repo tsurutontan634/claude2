@@ -119,6 +119,7 @@ body{
   line-height:1.65;
 }
 img,svg{display:block;max-width:100%}
+[hidden]{display:none !important}
 button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 input,select{font:inherit;color:var(--ink)}
 :focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:4px}
@@ -559,8 +560,8 @@ tr.hero-metric td:first-child{font-weight:900;color:var(--ink)}
           </label>
           <div class="grid2" id="d-scenRangeBox">
             <div class="field">
-              <div class="field-head"><span class="lbl">昇進・到達の時期を±</span></div>
-              <div class="unit-input"><input type="number" id="d-scenTime" min="0" max="5" step="1"><span class="unit">年ずらす</span></div>
+              <div class="field-head"><span class="lbl">昇進・到達の時期のずれ ±</span></div>
+              <div class="unit-input"><input type="number" id="d-scenTime" min="0" max="5" step="1"><span class="unit">年</span></div>
             </div>
             <div class="field">
               <div class="field-head"><span class="lbl">金額の上振れ/下振れ</span></div>
