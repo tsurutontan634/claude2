@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>初任給コンパス</title>
-<meta name="description" content="就活生・新社会人のための給料シミュレーター。年収から手取り・税金・社会保険を概算し、昇進を織り込んだ数年間の家計や、社宅・住宅手当・残業まで含めた企業の実質比較ができます。">
+<meta name="description" content="就活生・新社会人のための給料シミュレーター。年収から手取り・税金・社会保険を概算し、昇進シナリオを織り込んだ数年間の家計や、社宅・住宅手当・残業まで含めた企業の実質比較ができます。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -26,9 +26,9 @@
   --accent-ink:#ffffff;
   --accent-soft:#e2efe8;
   --focus:#2a78d6;
-  --keep:#1baf7a;          /* データ: 手取り・貯蓄 */
-  --si:#2a78d6;            /* データ: 社会保険 */
-  --itax:#eb6834;          /* データ: 所得税・支出 */
+  --keep:#1baf7a;          /* データ: 手取り・貯蓄・標準シナリオ */
+  --si:#2a78d6;            /* データ: 社会保険・楽観シナリオ */
+  --itax:#eb6834;          /* データ: 所得税・支出・悲観シナリオ */
   --rtax:#4a3aa7;          /* データ: 住民税 */
   --neg:#e34948;           /* データ: マイナス */
   --chart-context:#898781; /* 文脈系列(額面) */
@@ -151,12 +151,12 @@ input,select{font:inherit;color:var(--ink)}
 }
 
 /* ---------- layout ---------- */
-.panel-lead{color:var(--ink-2);font-size:13.5px;margin:-12px 0 20px}
+.panel-lead{color:var(--ink-2);font-size:13.5px;margin:-12px 0 18px}
 .layout{display:grid;grid-template-columns:396px minmax(0,1fr);gap:22px;align-items:start}
 .col{display:grid;gap:18px;min-width:0}
 @media (max-width:960px){.layout{grid-template-columns:1fr}}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-card);padding:20px 22px;box-shadow:var(--shadow);position:relative;min-width:0}
-.card h2{font-family:var(--font-display);font-weight:700;font-size:16.5px;margin-bottom:14px;display:flex;align-items:baseline;gap:8px}
+.card h2{font-family:var(--font-display);font-weight:700;font-size:16.5px;margin-bottom:14px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
 .card h2 .sub{font-family:var(--font-body);font-weight:400;font-size:12px;color:var(--muted)}
 .card h3{font-family:var(--font-display);font-weight:700;font-size:14px;margin:18px 0 10px;color:var(--ink-2)}
 .hint{font-size:12px;color:var(--muted);line-height:1.6}
@@ -164,12 +164,15 @@ input,select{font:inherit;color:var(--ink)}
 /* ---------- form controls ---------- */
 .field{margin-bottom:16px}
 .field:last-child{margin-bottom:0}
-.field-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:6px}
+.field-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
 label.lbl,.lbl{font-weight:700;font-size:13.5px;color:var(--ink)}
 .field-val{font-weight:700;font-size:13.5px;color:var(--accent);white-space:nowrap}
 .unit-input{display:flex;align-items:center;gap:8px}
 .unit-input input[type="number"]{width:110px;text-align:right}
 .unit-input .unit{color:var(--ink-2);font-size:13px}
+.head-input{display:flex;align-items:center;gap:4px;margin-left:auto}
+.head-input input[type="number"]{width:82px;padding:4px 8px;font-size:13px;text-align:right}
+.head-input .u{font-size:11.5px;color:var(--muted)}
 input[type="number"],input[type="text"],select{
   background:var(--surface-3);border:1px solid var(--line);border-radius:var(--radius-ctl);
   padding:8px 11px;font-size:14px;width:100%;transition:border-color .15s;
@@ -189,6 +192,10 @@ input[type="range"]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;b
 .chip{border:1px solid var(--line);background:var(--surface-3);border-radius:999px;padding:6px 14px;font-size:13px;font-weight:500;color:var(--ink-2);transition:all .15s}
 .chip:hover{border-color:var(--line-strong)}
 .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.chip-sm{padding:4px 12px;font-size:12px}
+.mini-toggle{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;flex:none}
+.mini-toggle button{font-size:10.5px;padding:2.5px 9px;color:var(--muted);background:var(--surface-3);white-space:nowrap}
+.mini-toggle button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:700}
 .subfields{background:var(--surface-3);border:1px solid var(--line);border-radius:10px;padding:13px 14px;margin-top:10px}
 .subfields .field{margin-bottom:12px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
@@ -207,19 +214,28 @@ details.adv .adv-body{margin-top:12px}
 .btn-x{width:30px;height:30px;border-radius:8px;color:var(--muted);display:grid;place-items:center;font-size:15px;flex:none}
 .btn-x:hover{background:var(--surface-2);color:var(--bad-text)}
 
+/* ---------- 段階レベル ---------- */
+.level-bar{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;margin:-4px 0 18px}
+.level-bar .lbl{font-size:12.5px;color:var(--ink-2)}
+#panel-deep[data-level="1"] .lv2,
+#panel-deep[data-level="1"] .lv3,
+#panel-deep[data-level="2"] .lv3{display:none !important}
+
 /* ---------- stats / hero ---------- */
-.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:14px}
 .stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-card);padding:16px 18px;box-shadow:var(--shadow)}
 .stat .s-label{font-size:12.5px;font-weight:700;color:var(--ink-2);display:flex;align-items:center;gap:5px}
-.stat .s-value{font-size:29px;font-weight:900;letter-spacing:.01em;margin-top:3px;line-height:1.25}
+.stat .s-value{font-size:27px;font-weight:900;letter-spacing:.01em;margin-top:3px;line-height:1.25}
 .stat .s-value .u{font-size:14px;font-weight:700;color:var(--ink-2);margin-left:2px}
-.stat .s-sub{font-size:12px;color:var(--muted);margin-top:3px}
+.stat .s-sub{font-size:11.5px;color:var(--muted);margin-top:3px}
 .stat.hero{background:linear-gradient(135deg,var(--accent),var(--accent-deep));border-color:transparent;color:var(--accent-ink)}
 .stat.hero .s-label,.stat.hero .s-sub{color:var(--accent-ink);opacity:.85}
-.stat.hero .s-value{font-size:38px}
+.stat.hero .s-value{font-size:36px}
 .stat.hero .s-value .u{color:var(--accent-ink);opacity:.85}
 .delta-up{color:var(--good-text);font-weight:700}
 .delta-down{color:var(--bad-text);font-weight:700}
+.scen-bar{display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap}
+.scen-bar .lbl{font-size:12.5px;color:var(--ink-2)}
 
 /* ---------- payslip ---------- */
 .payslip{position:relative}
@@ -239,6 +255,10 @@ details.adv .adv-body{margin-top:12px}
 }
 .promo-item{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--surface-3);border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin-bottom:8px}
 .ps-swatch{width:9px;height:9px;border-radius:3px;flex:none}
+.plan-lead{font-size:13px;color:var(--ink-2);margin:10px 0 8px;font-weight:700}
+.plan-desc{margin-top:12px;border-top:1px dashed var(--line);padding-top:10px;display:grid;gap:7px}
+.plan-desc .pd{font-size:12.5px;color:var(--ink-2);display:flex;gap:8px;align-items:baseline}
+.plan-desc .pd b{flex:none;font-size:11px;color:var(--accent);border:1px solid var(--accent);border-radius:5px;padding:0 6px;font-weight:700}
 
 /* ---------- charts ---------- */
 .chart-wrap{margin-top:6px}
@@ -282,10 +302,12 @@ table.data td.strong{color:var(--ink);font-weight:700}
 table.data tr.promo-row td{background:var(--accent-soft)}
 table.data tr.promo-row td:first-child{background:var(--accent-soft)}
 .badge{display:inline-block;font-size:10.5px;font-weight:700;color:var(--accent);border:1px solid var(--accent);border-radius:5px;padding:0 5px;margin-left:6px;vertical-align:1px}
+.badge.oneoff{color:var(--itax);border-color:var(--itax)}
 td.best{background:var(--accent-soft) !important;color:var(--accent-deep) !important;font-weight:900}
 td.best::before{content:"✓ ";font-weight:900}
 tr.hero-metric td{font-size:14px;border-top:2px solid var(--line-strong)}
 tr.hero-metric td:first-child{font-weight:900;color:var(--ink)}
+.swatch-dot{width:10px;height:10px;border-radius:3px;display:inline-block;margin-right:7px;vertical-align:-1px}
 
 /* ---------- callouts ---------- */
 .callout{border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;padding:12px 16px;font-size:13.5px;margin-top:14px}
@@ -313,7 +335,7 @@ tr.hero-metric td:first-child{font-weight:900;color:var(--ink)}
 .footer ul{padding-left:18px;margin:4px 0 12px}
 .footer .foot-actions{margin-top:10px}
 .link-btn{color:var(--accent);font-weight:700;text-decoration:underline;text-underline-offset:3px}
-.company-card .cc-head{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.company-card .cc-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
 .company-card .cc-head input[type="text"]{font-weight:900;font-size:16px;font-family:var(--font-display);background:transparent;border:none;border-bottom:2px solid var(--line);border-radius:0;padding:2px 4px}
 .company-card .cc-head input[type="text"]:focus{border-bottom-color:var(--accent)}
 .cc-color{width:10px;height:22px;border-radius:4px;flex:none;background:var(--accent)}
@@ -366,10 +388,10 @@ tr.hero-metric td:first-child{font-weight:900;color:var(--ink)}
             <label class="lbl" for="s-annual">年収(額面)</label>
           </div>
           <div class="unit-input">
-            <input type="number" id="s-annual" min="100" max="3000" step="10" inputmode="numeric">
+            <input type="number" id="s-annual" min="100" max="10000" step="10" inputmode="numeric">
             <span class="unit">万円</span>
           </div>
-          <input type="range" id="s-annualRange" min="1000000" max="15000000" step="100000" aria-label="年収スライダー">
+          <input type="range" id="s-annualRange" min="1000000" max="30000000" step="100000" aria-label="年収スライダー">
         </div>
         <div class="field">
           <div class="field-head">
@@ -386,10 +408,12 @@ tr.hero-metric td:first-child{font-weight:900;color:var(--ink)}
         <div class="callout" id="s-firstyear"></div>
       </div>
       <div class="card">
-        <h2>ひと月の目安 <span class="sub">手取りから逆算</span></h2>
-        <div id="s-guide"></div>
-        <p class="mini-note">家賃は「手取りの3分の1まで」が定番の目安。細かい生活費は「じっくり」タブでどうぞ。</p>
-        <p style="margin-top:10px"><button class="btn btn-primary" id="s-toDeep">じっくりシミュレーションする →</button></p>
+        <h2>モデルプラン <span class="sub">手取りから自動で配分</span></h2>
+        <div class="chips" id="s-planChips" role="group" aria-label="生活タイプ"></div>
+        <p class="plan-lead" id="s-planLead"></p>
+        <div id="s-plan"></div>
+        <div class="plan-desc" id="s-planDesc"></div>
+        <p style="margin-top:14px"><button class="btn btn-primary" id="s-toDeep">この配分でじっくりシミュレーション →</button></p>
       </div>
     </div>
     <div class="col">
@@ -437,62 +461,138 @@ tr.hero-metric td:first-child{font-weight:900;color:var(--ink)}
 </section>
 
 <!-- ================= じっくり ================= -->
-<section id="panel-deep" role="tabpanel" aria-labelledby="tab-deep" hidden>
-  <p class="panel-lead">月給・昇給・住まい・生活費を決めると、<strong>数年先までの家計と貯蓄</strong>が見えます。1年目に住民税がかからないことも織り込み済み。</p>
+<section id="panel-deep" role="tabpanel" aria-labelledby="tab-deep" hidden data-level="2">
+  <p class="panel-lead">給料・キャリア・住まい・生活費を決めると、<strong>数年先までの家計と貯蓄</strong>が見えます。1年目に住民税がかからないことも織り込み済み。</p>
+  <div class="level-bar">
+    <span class="lbl">入力の細かさ:</span>
+    <div class="chips" id="d-levelChips" role="group" aria-label="入力の細かさ"></div>
+    <span class="hint">レベルを下げて隠れた設定も、計算にはそのまま反映されます。</span>
+  </div>
   <div class="layout">
     <div class="col">
       <div class="card">
-        <h2>給料とキャリア</h2>
-        <div class="field">
-          <div class="field-head"><label class="lbl" for="d-monthly">月給(基本給)</label></div>
-          <div class="unit-input">
-            <input type="number" id="d-monthly" min="10" max="200" step="0.5" inputmode="decimal">
-            <span class="unit">万円</span>
+        <h2>給料</h2>
+        <div class="chips" id="d-payChips" role="group" aria-label="給与の入力方式" style="margin-bottom:14px"></div>
+        <div id="d-payMonthlyBox">
+          <div class="field">
+            <div class="field-head"><label class="lbl" for="d-monthly">月給(基本給)</label></div>
+            <div class="unit-input">
+              <input type="number" id="d-monthly" min="10" max="500" step="0.5" inputmode="decimal">
+              <span class="unit">万円</span>
+            </div>
+            <input type="range" id="d-monthlyRange" min="150000" max="1500000" step="5000" aria-label="月給スライダー">
           </div>
-          <input type="range" id="d-monthlyRange" min="150000" max="600000" step="5000" aria-label="月給スライダー">
+          <div class="field">
+            <div class="field-head"><label class="lbl" for="d-bonusR">賞与(年間)</label><span class="field-val" id="d-bonusVal"></span></div>
+            <input type="range" id="d-bonusR" min="0" max="10" step="0.5">
+          </div>
+        </div>
+        <div id="d-payAnnualBox" hidden>
+          <div class="field">
+            <div class="field-head"><label class="lbl" for="d-annualBase">基本給(年額・賞与を除く)</label></div>
+            <div class="unit-input">
+              <input type="number" id="d-annualBase" min="100" max="10000" step="10" inputmode="numeric">
+              <span class="unit">万円</span>
+            </div>
+            <input type="range" id="d-annualBaseRange" min="1500000" max="30000000" step="100000" aria-label="年間基本給スライダー">
+          </div>
+          <div class="field">
+            <div class="field-head"><label class="lbl" for="d-annualBonus">賞与(年額)</label></div>
+            <div class="unit-input">
+              <input type="number" id="d-annualBonus" min="0" max="5000" step="10" inputmode="numeric">
+              <span class="unit">万円</span>
+            </div>
+            <input type="range" id="d-annualBonusRange" min="0" max="10000000" step="100000" aria-label="年間賞与スライダー">
+          </div>
+          <p class="hint" id="d-annualHint" style="margin-bottom:12px"></p>
         </div>
         <div class="grid2">
           <div class="field">
-            <div class="field-head"><label class="lbl" for="d-bonusR">賞与(年間)</label><span class="field-val" id="d-bonusVal"></span></div>
-            <input type="range" id="d-bonusR" min="0" max="6" step="0.5">
-          </div>
-          <div class="field">
-            <div class="field-head"><label class="lbl" for="d-raiseR">昇給率(毎年)</label><span class="field-val" id="d-raiseVal"></span></div>
-            <input type="range" id="d-raiseR" min="0" max="8" step="0.1">
-          </div>
-          <div class="field">
-            <div class="field-head"><label class="lbl" for="d-otR"><span class="tip" data-tip="残業代は「月給÷160時間×1.25×残業時間」で概算しています(所定160時間・割増25%)。">残業(月平均)</span></label><span class="field-val" id="d-otVal"></span></div>
-            <input type="range" id="d-otR" min="0" max="60" step="5">
-          </div>
-          <div class="field">
-            <div class="field-head"><label class="lbl" for="d-otmode">残業代の支給</label></div>
-            <select id="d-otmode">
-              <option value="full">全額支給される</option>
-              <option value="fixed"><!-- みなし -->固定残業代込み(追加なし)</option>
-            </select>
-          </div>
-          <div class="field">
             <div class="field-head"><label class="lbl" for="d-yearsR">何年分みる?</label><span class="field-val" id="d-yearsVal"></span></div>
-            <input type="range" id="d-yearsR" min="3" max="20" step="1">
+            <input type="range" id="d-yearsR" min="3" max="30" step="1">
           </div>
           <div class="field">
             <div class="field-head"><label class="lbl" for="d-age">入社時の年齢</label></div>
             <input type="number" id="d-age" min="18" max="40" step="1" inputmode="numeric">
           </div>
+          <div class="field lv2">
+            <div class="field-head"><label class="lbl" for="d-otR"><span class="tip" data-tip="残業代は「月給÷160時間×1.25×残業時間」で概算しています(所定160時間・割増25%)。">残業(月平均)</span></label><span class="field-val" id="d-otVal"></span></div>
+            <input type="range" id="d-otR" min="0" max="100" step="5">
+          </div>
+          <div class="field lv2">
+            <div class="field-head"><label class="lbl" for="d-otmode">残業代の支給</label></div>
+            <select id="d-otmode">
+              <option value="full">全額支給される</option>
+              <option value="fixed">固定残業代込み(追加なし)</option>
+            </select>
+          </div>
         </div>
-        <h3>昇進イベント <span class="tip" data-tip="「◯年目に役職が付いて月給が上がる」を再現します。昇進後もその金額を含めて毎年の昇給率がかかります。">?</span></h3>
-        <div id="d-promos"></div>
-        <button class="btn btn-ghost" id="d-addPromo">+ 昇進を追加</button>
+        <div class="field lv2" style="margin-top:4px">
+          <label style="display:flex;gap:9px;align-items:flex-start;cursor:pointer">
+            <input type="checkbox" id="d-firstYear" style="width:auto;margin-top:4px">
+            <span class="lbl" style="font-weight:500;font-size:13px">1年目は4月入社として計算<span class="hint">(給与9ヶ月分・賞与は半分・生活費も9ヶ月分)</span></span>
+          </label>
+        </div>
       </div>
+
+      <div class="card lv2">
+        <h2>キャリアの伸ばし方</h2>
+        <div class="chips" id="d-careerChips" role="group" aria-label="キャリアの入力方式" style="margin-bottom:14px"></div>
+        <div id="d-growthBox">
+          <div class="field">
+            <div class="field-head"><label class="lbl" for="d-raiseR">昇給率(毎年)</label><span class="field-val" id="d-raiseVal"></span></div>
+            <input type="range" id="d-raiseR" min="0" max="15" step="0.1">
+          </div>
+          <h3>昇進イベント <span class="tip" data-tip="「◯年目に役職が付いて月給が上がる」を再現します。昇進後もその金額を含めて毎年の昇給率がかかります。">?</span></h3>
+          <div id="d-promos"></div>
+          <button class="btn btn-ghost" id="d-addPromo">+ 昇進を追加</button>
+        </div>
+        <div id="d-anchorsBox" hidden>
+          <p class="hint" style="margin-bottom:10px">「◯年目に年収◯◯万円」を並べると、間の年は複利でなめらかに補間します(年収=基本給+賞与、残業代は別途上乗せ)。最後のポイント以降は直前の伸び率が続きます。</p>
+          <div id="d-anchors"></div>
+          <button class="btn btn-ghost" id="d-addAnchor">+ 年収ポイントを追加</button>
+        </div>
+        <div class="lv3" style="border-top:1px dashed var(--line);margin-top:16px;padding-top:12px">
+          <label style="display:flex;gap:9px;align-items:center;cursor:pointer;margin-bottom:10px">
+            <input type="checkbox" id="d-compare" style="width:auto">
+            <span class="lbl">楽観・悲観シナリオも一緒に表示</span>
+          </label>
+          <div class="grid2" id="d-scenRangeBox">
+            <div class="field">
+              <div class="field-head"><span class="lbl">昇進・到達の時期を±</span></div>
+              <div class="unit-input"><input type="number" id="d-scenTime" min="0" max="5" step="1"><span class="unit">年ずらす</span></div>
+            </div>
+            <div class="field">
+              <div class="field-head"><span class="lbl">金額の上振れ/下振れ</span></div>
+              <div class="unit-input"><input type="number" id="d-scenMag" min="0" max="50" step="5"><span class="unit">%</span></div>
+            </div>
+          </div>
+          <p class="hint">楽観=昇進が早く金額も上振れ(昇給率+1%)、悲観=その逆(昇給率−1%)。</p>
+        </div>
+      </div>
+
       <div class="card">
         <h2>住まい</h2>
         <div class="chips" id="d-housingChips" role="group" aria-label="住まいの形態"></div>
         <div class="subfields" id="d-housingFields"></div>
       </div>
+
       <div class="card">
         <h2>毎月の生活費 <span class="sub">住まい以外</span></h2>
-        <div id="d-living"></div>
-        <details class="adv">
+        <div class="chips" id="d-livingPresets" style="margin-bottom:6px"></div>
+        <p class="hint" style="margin-bottom:10px">タイプを押すと、いまの手取りに合わせて一括設定します。</p>
+        <div class="bud-sum" style="margin-top:0;border-top:none;padding-top:0"><span>生活費の合計(月)</span><span class="num" id="d-livingTotal"></span></div>
+        <div id="d-living" class="lv2" style="margin-top:10px"></div>
+        <div class="field lv3" style="margin-top:14px;border-top:1px dashed var(--line);padding-top:12px">
+          <div class="field-head"><label class="lbl" for="d-inflR"><span class="tip" data-tip="物価上昇や生活水準の自然な上昇ぶんとして、「定額」の費目と家賃・社宅負担などに毎年かかる上昇率。「手取り連動」の費目には掛かりません。">支出の上昇率(毎年)</span></label><span class="field-val" id="d-inflVal"></span></div>
+          <input type="range" id="d-inflR" min="0" max="5" step="0.5">
+        </div>
+        <div class="lv3" style="margin-top:14px">
+          <h3 style="margin-top:0">単発の大きな支出 <span class="tip" data-tip="海外旅行・引越し・車・結婚式など、その年だけかかる支出。毎年かかるものは上の月々の生活費へ。">?</span></h3>
+          <div id="d-oneoffs"></div>
+          <button class="btn btn-ghost" id="d-addOneoff">+ 単発の支出を追加</button>
+        </div>
+        <details class="adv lv3">
           <summary>くわしい設定(保険料率・iDeCo)</summary>
           <div class="adv-body">
             <div class="field">
@@ -515,14 +615,27 @@ tr.hero-metric td:first-child{font-weight:900;color:var(--ink)}
       </div>
     </div>
     <div class="col">
+      <div class="scen-bar" id="d-scenBar" hidden>
+        <span class="lbl">表示中のシナリオ:</span>
+        <div class="chips" id="d-scenChips"></div>
+      </div>
       <div class="stat-row" id="d-stats"></div>
+      <div class="card" id="d-scenSummary" hidden>
+        <h2>シナリオ比較 <span class="sub" id="d-scenSummarySub"></span></h2>
+        <div class="table-scroll">
+          <table class="data" style="min-width:460px">
+            <thead><tr><th>シナリオ</th><th>最終年の額面</th><th>最終年の手取り</th><th>累計貯蓄</th></tr></thead>
+            <tbody id="d-scenSummaryBody"></tbody>
+          </table>
+        </div>
+      </div>
       <div id="d-callouts"></div>
       <div class="card">
         <h2>月々のお金の流れ <span class="sub">1年目・賞与は含まず</span></h2>
         <div id="d-budget"></div>
       </div>
       <div class="card">
-        <h2>年収と手取りの推移</h2>
+        <h2 id="d-trendTitle">年収と手取りの推移</h2>
         <div class="chart-wrap" id="d-trend"></div>
         <div class="legend" id="d-trendLegend"></div>
         <div class="chart-title">貯蓄の積み上がり <span class="tip" data-tip="毎年の「手取り − 支出」を貯蓄として積み上げた金額。iDeCo掛金も貯蓄に含めています。">?</span></div>
@@ -547,9 +660,9 @@ tr.hero-metric td:first-child{font-weight:900;color:var(--ink)}
 <section id="panel-comp" role="tabpanel" aria-labelledby="tab-comp" hidden>
   <p class="panel-lead">額面が高い会社が「使えるお金」も多いとは限りません。<span class="tip" data-tip="会社が借りた物件に安く住める制度。家賃の大部分を会社が負担しても原則給与として課税されないため、同じ額の住宅手当(課税される)より断然おトク。">借り上げ社宅</span>・住宅手当・交通費・残業まで含めた「実質」で比べましょう。</p>
   <div class="card" style="margin-bottom:16px">
-    <div class="field" style="max-width:420px;margin-bottom:0">
-      <div class="field-head"><label class="lbl" for="c-rent">共通の想定:住みたい部屋の家賃(月)</label><span class="field-val" id="c-rentVal"></span></div>
-      <input type="range" id="c-rent" min="30000" max="150000" step="5000">
+    <div class="field" style="max-width:460px;margin-bottom:0">
+      <div class="field-head"><label class="lbl" for="c-rent">共通の想定:住みたい部屋の家賃(月)</label><span class="head-input"><input type="number" id="c-rentNum" min="0" max="100" step="0.5" inputmode="decimal"><span class="u">万円</span></span></div>
+      <input type="range" id="c-rent" min="30000" max="400000" step="5000">
       <p class="hint" style="margin-top:6px">会社の住宅サポートがない場合、この家賃を全額自分で払う前提で比べます。</p>
     </div>
   </div>
@@ -588,6 +701,7 @@ tr.hero-metric td:first-child{font-weight:900;color:var(--ink)}
     <li>社会保険:協会けんぽ(初期値は東京・令和7年度 9.91%)/厚生年金 18.3%/雇用保険 0.55%(本人負担分で計算、健保・年金は労使折半)。40〜64歳は介護保険 1.59% を加算。標準報酬月額の等級は簡略化し、月額そのまま(上限あり)で計算しています。</li>
     <li>税金:令和7年度税制改正後の給与所得控除(最低65万円)・基礎控除(58万円、低所得は最大95万円 ※令和9年分以降の恒久ルール)で計算。復興特別所得税 2.1%、住民税は所得割10%+均等割・森林環境税 5,000円、調整控除 2,500円。単身・扶養なし・生命保険料控除等なしを想定しています。</li>
     <li>住民税は前年所得に課税されるため、複数年シミュレーションでは1年目0円・2年目から前年ベースで計算。単年の表示は「2年目以降のイメージ」です。</li>
+    <li>「1年目は4月入社」をオンにすると、1年目のみ給与9ヶ月分・賞与半分・生活費9ヶ月分で計算します。年収の直接指定は基本給+賞与の合計(残業代は月給換算のうえ別途上乗せ)です。</li>
     <li>通勤手当は月15万円まで非課税ですが、社会保険料の計算には含めています。借り上げ社宅は税法上の要件(賃貸料相当額など)を満たす前提の簡略計算です。</li>
     <li>実際の金額は、健康保険組合・自治体・企業の制度により変わります。就活の意思決定の「目安」としてご利用ください。</li>
   </ul>
@@ -661,16 +775,17 @@ function progressiveTax(taxable) {
   }
 }
 
-// 社会保険料(本人負担分)
+// 社会保険料(本人負担分)。monthsWorked: その年に給与が出た月数(通常12)
 function calcSocialInsurance(o) {
   const care = (o.age >= 40 && o.age < 65) ? TAXC.careRate : 0;
   const hHalf = ((o.healthRate ?? TAXC.healthRateDefault) + care) / 2;
   const pHalf = TAXC.pensionRate / 2;
+  const months = o.monthsWorked ?? 12;
   const payments = o.bonusPayments ?? 2;
   const bonusPer = payments > 0 ? o.bonusAnnual / payments : 0;
-  const health = Math.min(o.monthlySI, TAXC.healthCapM) * 12 * hHalf
+  const health = Math.min(o.monthlySI, TAXC.healthCapM) * months * hHalf
                + Math.min(o.bonusAnnual, TAXC.healthBonusCapY) * hHalf;
-  const pension = Math.min(o.monthlySI, TAXC.pensionCapM) * 12 * pHalf
+  const pension = Math.min(o.monthlySI, TAXC.pensionCapM) * months * pHalf
                 + Math.min(bonusPer, TAXC.pensionBonusCapPer) * payments * pHalf;
   const emp = o.grossForEmp * TAXC.empRate;
   const r = { health: Math.round(health), pension: Math.round(pension), emp: Math.round(emp) };
@@ -700,11 +815,14 @@ function calcResidentTax(taxableGross, siTotal, idecoAnnual) {
  * monthly: 月給(基本給) / bonusMonths: 賞与ヶ月数 / allowTaxableM: 課税される月額手当(住宅手当・残業代等)
  * commuteM: 通勤手当(非課税・月) / age / healthRate(労使合計) / idecoM
  * residentTaxOf: 'same'(同年所得で概算=定常状態) or 数値(前年計算済みの住民税額)
+ * monthsFactor: 1年目の入社月按分(4月入社=9/12など) / bonusFactor: 同・賞与の係数
  */
 function calcYear(p) {
-  const bonusAnnual = p.monthly * (p.bonusMonths || 0);
-  const taxableGross = (p.monthly + (p.allowTaxableM || 0)) * 12 + bonusAnnual;
-  const commuteY = (p.commuteM || 0) * 12;
+  const mf = p.monthsFactor ?? 1;
+  const months = 12 * mf;
+  const bonusAnnual = p.monthly * (p.bonusMonths || 0) * (p.bonusFactor ?? 1);
+  const taxableGross = (p.monthly + (p.allowTaxableM || 0)) * months + bonusAnnual;
+  const commuteY = (p.commuteM || 0) * months;
   const idecoY = (p.idecoM || 0) * 12;
   const si = calcSocialInsurance({
     monthlySI: p.monthly + (p.allowTaxableM || 0) + (p.commuteM || 0),
@@ -713,6 +831,7 @@ function calcYear(p) {
     grossForEmp: taxableGross + commuteY,
     age: p.age ?? 23,
     healthRate: p.healthRate,
+    monthsWorked: months,
   });
   const incomeTax = calcIncomeTax(taxableGross, si.total, idecoY);
   const residentTax = (p.residentTaxOf === 'same')
@@ -720,20 +839,32 @@ function calcYear(p) {
     : Math.round(p.residentTaxOf || 0);
   // 手取り(通勤手当は定期代に消える前提で除いて表示)
   const net = Math.round(taxableGross - si.total - incomeTax - residentTax);
-  return { taxableGross, bonusAnnual, si, incomeTax, residentTax, net, idecoY };
+  return { taxableGross, bonusAnnual, si, incomeTax, residentTax, net, idecoY, mf };
 }
 
-// 月々の手取り(賞与を除く月ベースの概算): 控除を月給比で按分
-function monthlyNetOf(r, p) {
-  const monthlyPart = (p.monthly + (p.allowTaxableM || 0)) * 12 / Math.max(1, r.taxableGross);
-  const deductions = (r.si.total + r.incomeTax + r.residentTax) * monthlyPart;
-  return ((p.monthly + (p.allowTaxableM || 0)) * 12 - deductions) / 12;
+// 年収ポイント([{year, annual}])から各年の年収を複利補間で返す関数を作る
+function annualAtFactory(list) {
+  return y => {
+    if (y <= list[0].year || list.length === 1) return list[0].annual;
+    for (let i = 0; i < list.length - 1; i++) {
+      const a = list[i], b = list[i + 1];
+      if (y <= b.year) {
+        return a.annual * Math.pow(b.annual / a.annual, (y - a.year) / (b.year - a.year));
+      }
+    }
+    // 最後のポイント以降は直前区間の伸び率を継続(暴走防止に年1億で頭打ち)
+    const a = list[list.length - 2], b = list[list.length - 1];
+    const g = Math.pow(b.annual / a.annual, 1 / (b.year - a.year));
+    return Math.min(1e8, b.annual * Math.pow(g, y - b.year));
+  };
 }
 
 /**
  * 複数年シミュレーション。
- * cfg: { monthly0, bonusMonths, raisePct, promotions:[{year,amount,label}], years, age0,
- *        otH, otMode('full'|'fixed'), allowHousingM, healthRate, idecoM }
+ * cfg: { monthly0, bonusMonths, years, age0, otH, otMode('full'|'fixed'), allowHousingM, healthRate, idecoM,
+ *        raisePct + promotions:[{year,amount,label}]  … 昇給率方式
+ *        annualAt(y)=>年収                            … 年収ポイント方式(基本給+賞与ベース)
+ *        firstYear: {monthsFactor, bonusFactor} | null … 1年目の入社月按分 }
  * 住民税: 1年目0円、以降は前年の所得から計算。
  */
 function simulateYears(cfg) {
@@ -741,21 +872,33 @@ function simulateYears(cfg) {
   let monthly = cfg.monthly0;
   let prev = null;
   for (let y = 1; y <= cfg.years; y++) {
-    if (y > 1) monthly *= 1 + (cfg.raisePct || 0) / 100;
-    const promo = (cfg.promotions || []).find(p => p.year === y);
-    if (promo) monthly += promo.amount;
+    let promos = [];
+    if (cfg.annualAt) {
+      monthly = cfg.annualAt(y) / (12 + (cfg.bonusMonths || 0));
+    } else {
+      if (y > 1) monthly *= 1 + (cfg.raisePct || 0) / 100;
+      promos = (cfg.promotions || []).filter(p => p.year === y);
+      for (const p of promos) monthly += p.amount;
+    }
     const otPayM = cfg.otMode === 'full'
       ? monthly / TAXC.scheduledHoursM * 1.25 * (cfg.otH || 0)
       : 0;
     const allowM = (cfg.allowHousingM || 0) + otPayM;
+    const first = (y === 1 && cfg.firstYear) ? cfg.firstYear : null;
     const residentTaxOf = (y === 1) ? 0
       : calcResidentTax(prev.taxableGross, prev.si.total, prev.idecoY);
     const r = calcYear({
       monthly, bonusMonths: cfg.bonusMonths, allowTaxableM: allowM,
       age: cfg.age0 + y - 1, healthRate: cfg.healthRate, idecoM: cfg.idecoM,
       residentTaxOf,
+      monthsFactor: first ? first.monthsFactor : 1,
+      bonusFactor: first ? first.bonusFactor : 1,
     });
-    rows.push({ year: y, age: cfg.age0 + y - 1, monthly, otPayM, promo: promo || null, ...r });
+    rows.push({
+      year: y, age: cfg.age0 + y - 1, monthly, otPayM,
+      promo: promos.length ? { label: promos.map(p => p.label).filter(Boolean).join('・') || '昇進', amount: promos.reduce((s, p) => s + p.amount, 0) } : null,
+      ...r,
+    });
     prev = r;
   }
   return rows;
@@ -806,35 +949,56 @@ function niceTicks(min, max, n = 4) {
 }
 function setRangeFill(input) {
   const min = +input.min || 0, max = +input.max || 100;
-  const pct = ((+input.value - min) / (max - min)) * 100;
+  const pct = clampN(((+input.value - min) / (max - min)) * 100, 0, 100);
   input.style.setProperty('--fill', pct + '%');
 }
 
 /* ---------------------------------------------------------------------
    state
 --------------------------------------------------------------------- */
-const STORAGE_KEY = 'shoninkyu-compass-v1';
+const STORAGE_KEY = 'shoninkyu-compass-v2';
 const DEFAULTS = {
   theme: 'auto',
   tab: 'simple',
-  simple: { annual: 3500000, bonusMonths: 2 },
+  simple: { annual: 3500000, bonusMonths: 2, planType: 'balance' },
   deep: {
-    monthly: 230000, bonusMonths: 2, raisePct: 2.0, years: 10, age: 22,
-    otH: 10, otMode: 'full',
-    promotions: [
-      { year: 4, amount: 30000, label: '主任' },
-      { year: 8, amount: 50000, label: '係長' },
-    ],
-    housing: { mode: 'rent', rent: 70000, familyPay: 30000, allowance: 20000, selfPay: 20000 },
-    living: { food: 40000, util: 12000, comm: 8000, social: 30000, cloth: 15000, scholar: 0, other: 10000 },
+    detailLevel: 2,
+    payMode: 'monthly', monthly: 230000, bonusMonths: 2,
+    annualBase: 2760000, annualBonus: 460000,
+    firstYearPartial: false,
+    years: 10, age: 22, otH: 10, otMode: 'full',
+    career: {
+      mode: 'growth', raisePct: 2.0,
+      promotions: [
+        { year: 4, amount: 30000, label: '主任' },
+        { year: 8, amount: 50000, label: '係長' },
+      ],
+      anchors: [
+        { year: 3, annual: 3800000 },
+        { year: 7, annual: 5000000 },
+      ],
+    },
+    compare: false, scenario: 'base', scenTime: 1, scenMag: 10,
+    housing: { mode: 'rent', rent: 70000, rentMode: 'fixed', rentPct: 28, rentCap: 0, familyPay: 30000, allowance: 20000, selfPay: 20000 },
+    living: {
+      food:    { mode: 'fixed', amount: 40000, pct: 15, cap: 80000 },
+      util:    { mode: 'fixed', amount: 12000, pct: 4,  cap: 30000 },
+      comm:    { mode: 'fixed', amount: 8000,  pct: 3,  cap: 20000 },
+      social:  { mode: 'fixed', amount: 30000, pct: 12, cap: 100000 },
+      cloth:   { mode: 'fixed', amount: 15000, pct: 6,  cap: 50000 },
+      scholar: { mode: 'fixed', amount: 0,     pct: 0,  cap: 0 },
+      other:   { mode: 'fixed', amount: 10000, pct: 5,  cap: 50000 },
+    },
+    livingInflationPct: 0,
+    oneOffs: [],
     healthRate: 9.91, ideco: 0,
   },
   comp: {
     rent: 70000,
     companies: [
-      { on: true, name: 'A社', monthly: 230000, bonusMonths: 4, raisePct: 2, otH: 20, otMode: 'full', housing: 'allowance', allowance: 20000, selfPay: 20000, commuteCost: 10000, commutePaid: true, perks: 0 },
-      { on: true, name: 'B社', monthly: 260000, bonusMonths: 2, raisePct: 2.5, otH: 30, otMode: 'fixed', housing: 'none', allowance: 20000, selfPay: 20000, commuteCost: 12000, commutePaid: false, perks: 0 },
-      { on: true, name: 'C社', monthly: 220000, bonusMonths: 4, raisePct: 2, otH: 10, otMode: 'full', housing: 'shataku', allowance: 20000, selfPay: 20000, commuteCost: 8000, commutePaid: true, perks: 10000 },
+      { on: true, name: 'A社', payMode: 'monthly', monthly: 230000, bonusMonths: 4, annualBase: 2760000, annualBonus: 920000, raisePct: 2, otH: 20, otMode: 'full', housing: 'allowance', allowance: 20000, selfPay: 20000, commuteCost: 10000, commutePaid: true, perks: 0 },
+      { on: true, name: 'B社', payMode: 'monthly', monthly: 260000, bonusMonths: 2, annualBase: 3120000, annualBonus: 520000, raisePct: 2.5, otH: 30, otMode: 'fixed', housing: 'none', allowance: 20000, selfPay: 20000, commuteCost: 12000, commutePaid: false, perks: 0 },
+      { on: true, name: 'C社', payMode: 'monthly', monthly: 220000, bonusMonths: 4, annualBase: 2640000, annualBonus: 880000, raisePct: 2, otH: 10, otMode: 'full', housing: 'shataku', allowance: 20000, selfPay: 20000, commuteCost: 8000, commutePaid: true, perks: 10000 },
     ],
   },
 };
@@ -842,7 +1006,7 @@ function deepMerge(base, over) {
   if (Array.isArray(base)) return Array.isArray(over) ? over : base;
   if (typeof base === 'object' && base !== null) {
     const out = { ...base };
-    if (typeof over === 'object' && over !== null) {
+    if (typeof over === 'object' && over !== null && !Array.isArray(over)) {
       for (const k of Object.keys(base)) if (k in over) out[k] = deepMerge(base[k], over[k]);
     }
     return out;
@@ -904,7 +1068,6 @@ function ttRows(title, rows) {
     }
   };
 }
-// 用語ツールチップ(ホバー/タップ両対応)
 document.addEventListener('pointerover', e => {
   const t = e.target.closest('.tip');
   if (t) tip.show(ttText(null, t.dataset.tip), e.clientX, e.clientY);
@@ -938,7 +1101,7 @@ function renderBreakdownBar(container, segments, total) {
   const g = sv('g', { 'clip-path': `url(#${clipId})` });
   let x = 0;
   const usable = W - GAP * (segments.length - 1);
-  segments.forEach((s, i) => {
+  segments.forEach(s => {
     const w = Math.max(0, usable * (s.value / total));
     const rect = sv('rect', { x, y: 0, width: w, height: H, fill: s.color, class: 'bar-seg' });
     const pct = Math.round(s.value / total * 100);
@@ -974,15 +1137,20 @@ function makeLegend(container, items) {
   }
 }
 
-// 推移の折れ線(額面=文脈グレー、手取り=アクア、昇進マーカー、クロスヘア)
-function renderTrendChart(container, rows) {
+/**
+ * 推移の折れ線チャート(汎用)。
+ * seriesList: [{label, color, rows, get}] — 全系列同じ年数のrowsを持つ想定。
+ * opts.markerSeries: 昇進マーカーを打つ系列のindex(省略で無し)
+ */
+function renderTrendChart(container, seriesList, opts = {}) {
   container.textContent = '';
   const W = 720, H = 280, L = 54, R = 76, T = 18, B = 34;
-  const n = rows.length;
-  const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart-svg', role: 'img', 'aria-label': '額面と手取りの推移' });
+  const baseRows = seriesList[0].rows;
+  const n = baseRows.length;
+  const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart-svg', role: 'img', 'aria-label': '推移チャート' });
   const xs = i => L + (W - L - R) * (n === 1 ? 0.5 : i / (n - 1));
-  const maxMan = Math.max(...rows.map(r => r.taxableGross)) / 10000;
-  const ticks = niceTicks(0, maxMan * 1.08, 4);
+  const maxMan = Math.max(...seriesList.flatMap(s => s.rows.map(r => s.get(r)))) / 10000;
+  const ticks = niceTicks(0, maxMan * 1.06, 4);
   const yMax = ticks[ticks.length - 1];
   const ys = man => T + (H - T - B) * (1 - man / yMax);
   for (const t of ticks) {
@@ -992,38 +1160,41 @@ function renderTrendChart(container, rows) {
     svg.appendChild(lab);
   }
   const xStep = Math.max(1, Math.ceil(n / 10));
-  rows.forEach((r, i) => {
+  baseRows.forEach((r, i) => {
     if (i % xStep === 0 || i === n - 1) {
       const lab = sv('text', { x: xs(i), y: H - B + 18, 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--muted)' });
       lab.textContent = r.year + '年目';
       svg.appendChild(lab);
     }
   });
-  const path = (get, color) => {
-    const d = rows.map((r, i) => (i ? 'L' : 'M') + xs(i).toFixed(1) + ',' + ys(get(r) / 10000).toFixed(1)).join('');
-    svg.appendChild(sv('path', { d, fill: 'none', stroke: color, 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
-  };
-  path(r => r.taxableGross, SERIES.context);
-  path(r => r.net, SERIES.keep);
-  // 昇進マーカー(手取り線上)
-  rows.forEach((r, i) => {
-    if (r.promo) {
-      svg.appendChild(sv('circle', { cx: xs(i), cy: ys(r.net / 10000), r: 5.5, fill: SERIES.keep, stroke: 'var(--surface)', 'stroke-width': 2 }));
-    }
-  });
-  // 終端マーカー+直接ラベル(衝突したら離す)
-  const endG = ys(rows[n - 1].taxableGross / 10000), endN = ys(rows[n - 1].net / 10000);
-  let yG = endG, yN = endN;
-  if (yN - yG < 16) { yG -= (16 - (yN - yG)) / 2; yN += (16 - (endN - endG)) / 2; }
-  svg.appendChild(sv('circle', { cx: xs(n - 1), cy: endG, r: 4, fill: SERIES.context, stroke: 'var(--surface)', 'stroke-width': 2 }));
-  svg.appendChild(sv('circle', { cx: xs(n - 1), cy: endN, r: 4, fill: SERIES.keep, stroke: 'var(--surface)', 'stroke-width': 2 }));
-  const endLab = (y, text, cls) => {
-    const t = sv('text', { x: xs(n - 1) + 9, y: y + 4, 'font-size': 11.5, 'font-weight': 700, fill: cls, class: 'num' });
-    t.textContent = text;
+  for (const s of seriesList) {
+    const d = s.rows.map((r, i) => (i ? 'L' : 'M') + xs(i).toFixed(1) + ',' + ys(s.get(r) / 10000).toFixed(1)).join('');
+    svg.appendChild(sv('path', { d, fill: 'none', stroke: s.color, 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+  }
+  // 昇進マーカー
+  if (opts.markerSeries != null) {
+    const s = seriesList[opts.markerSeries];
+    s.rows.forEach((r, i) => {
+      if (r.promo) svg.appendChild(sv('circle', { cx: xs(i), cy: ys(s.get(r) / 10000), r: 5.5, fill: s.color, stroke: 'var(--surface)', 'stroke-width': 2 }));
+    });
+  }
+  // 終端マーカー+直接ラベル(重なったら押し広げる)
+  const ends = seriesList.map(s => ({
+    y: ys(s.get(s.rows[n - 1]) / 10000),
+    text: manNum(s.get(s.rows[n - 1]), 0) + '万',
+    color: s.color,
+  })).sort((a, b) => a.y - b.y);
+  for (let i = 1; i < ends.length; i++) {
+    if (ends[i].y - ends[i - 1].y < 15) ends[i].y = ends[i - 1].y + 15;
+  }
+  for (const s of seriesList) {
+    svg.appendChild(sv('circle', { cx: xs(n - 1), cy: ys(s.get(s.rows[n - 1]) / 10000), r: 4, fill: s.color, stroke: 'var(--surface)', 'stroke-width': 2 }));
+  }
+  for (const e of ends) {
+    const t = sv('text', { x: xs(n - 1) + 9, y: clampN(e.y + 4, 12, H - B - 2), 'font-size': 11.5, 'font-weight': 700, fill: 'var(--ink)', class: 'num' });
+    t.textContent = e.text;
     svg.appendChild(t);
-  };
-  endLab(yG, manNum(rows[n - 1].taxableGross, 0) + '万', 'var(--muted)');
-  endLab(yN, manNum(rows[n - 1].net, 0) + '万', 'var(--ink)');
+  }
   // クロスヘア+ツールチップ
   const cross = sv('line', { y1: T, y2: H - B, stroke: 'var(--axis)', 'stroke-width': 1, visibility: 'hidden' });
   svg.appendChild(cross);
@@ -1034,14 +1205,13 @@ function renderTrendChart(container, rows) {
     const i = clampN(Math.round((px - L) / ((W - L - R) / Math.max(1, n - 1))), 0, n - 1);
     cross.setAttribute('x1', xs(i)); cross.setAttribute('x2', xs(i));
     cross.setAttribute('visibility', 'visible');
-    const r = rows[i];
-    const list = [
-      { label: '額面', value: fmtMan(r.taxableGross, 0), color: SERIES.context },
-      { label: '手取り', value: fmtMan(r.net, 0), color: SERIES.keep },
-      { label: '住民税', value: fmtMan(r.residentTax, 1) },
-    ];
-    if (r.promo) list.push({ label: '昇進', value: (r.promo.label || '') + ' +' + fmtMan(r.promo.amount, 1) + '/月' });
-    tip.show(ttRows(r.year + '年目(' + r.age + '歳)', list), ev.clientX, ev.clientY);
+    const list = seriesList.map(s => ({ label: s.label, value: fmtMan(s.get(s.rows[i]), 0), color: s.colorHex || undefined }));
+    const br = baseRows[i];
+    if (opts.markerSeries != null && seriesList[opts.markerSeries].rows[i].promo) {
+      const p = seriesList[opts.markerSeries].rows[i].promo;
+      list.push({ label: '昇進', value: p.label + ' +' + fmtMan(p.amount, 1) + '/月' });
+    }
+    tip.show(ttRows(br.year + '年目(' + br.age + '歳)', list), ev.clientX, ev.clientY);
   });
   overlay.addEventListener('pointerleave', () => { cross.setAttribute('visibility', 'hidden'); tip.hide(); });
   svg.appendChild(overlay);
@@ -1068,6 +1238,7 @@ function renderCumChart(container, rows) {
   }
   const bw = Math.min(24, (W - L - R) / n * 0.55);
   const y0 = ys(0);
+  const xStep = Math.max(1, Math.ceil(n / 10));
   rows.forEach((r, i) => {
     const v = r.cum / 10000;
     const yTop = ys(Math.max(0, v)), yBot = ys(Math.min(0, v));
@@ -1088,15 +1259,12 @@ function renderCumChart(container, rows) {
     bar.addEventListener('pointermove', ev => tip.move(ev.clientX, ev.clientY));
     bar.addEventListener('pointerleave', () => tip.hide());
     svg.appendChild(bar);
-    // X軸ラベルは推移チャートと揃える
-    const xStep = Math.max(1, Math.ceil(n / 10));
     if (i % xStep === 0 || i === n - 1) {
       const lab = sv('text', { x: xs(i), y: H - B + 18, 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--muted)' });
       lab.textContent = r.year + '年目';
       svg.appendChild(lab);
     }
   });
-  // 最終値ラベル
   const last = rows[n - 1];
   const lv = last.cum / 10000;
   const lab = sv('text', {
@@ -1109,8 +1277,113 @@ function renderCumChart(container, rows) {
 }
 
 /* ---------------------------------------------------------------------
-   かんたんタブ
+   汎用: スライダー+数値入力のフィールドを作る(値は円で保持)
 --------------------------------------------------------------------- */
+function sliderNumField(box, o) {
+  // o: {label, tip, hint, min, max, step, get, set, onchange, unit, numMin, numMax, numStep, cls}
+  const f = h('div', 'field' + (o.cls ? ' ' + o.cls : ''));
+  const head = h('div', 'field-head');
+  if (o.tip) {
+    const s = h('span', 'tip lbl', o.label); s.dataset.tip = o.tip; head.appendChild(s);
+  } else head.appendChild(h('span', 'lbl', o.label));
+  const wrap = h('span', 'head-input');
+  const num = document.createElement('input');
+  Object.assign(num, { type: 'number', min: o.numMin ?? 0, max: o.numMax ?? 1000, step: o.numStep ?? 0.1, value: round1(o.get() / 10000) });
+  num.setAttribute('inputmode', 'decimal');
+  num.setAttribute('aria-label', o.label + '(万円)');
+  wrap.appendChild(num);
+  wrap.appendChild(h('span', 'u', o.unit ?? '万円'));
+  head.appendChild(wrap);
+  const range = document.createElement('input');
+  Object.assign(range, { type: 'range', min: o.min, max: o.max, step: o.step, value: clampN(o.get(), o.min, o.max) });
+  range.setAttribute('aria-label', o.label + 'スライダー');
+  const syncFromYen = () => {
+    num.value = round1(o.get() / 10000);
+    range.value = clampN(o.get(), o.min, o.max);
+    setRangeFill(range);
+  };
+  num.addEventListener('input', () => {
+    const yen = clampN((+num.value || 0) * 10000, (o.numMin ?? 0) * 10000, (o.numMax ?? 1000) * 10000);
+    o.set(yen);
+    range.value = clampN(yen, o.min, o.max);
+    setRangeFill(range);
+    o.onchange();
+  });
+  range.addEventListener('input', () => {
+    o.set(+range.value);
+    num.value = round1(o.get() / 10000);
+    setRangeFill(range);
+    o.onchange();
+  });
+  f.append(head, range);
+  if (o.hint) f.appendChild(h('p', 'hint', o.hint));
+  box.appendChild(f);
+  syncFromYen();
+  return f;
+}
+function chipGroup(box, options, isOn, onPick, small) {
+  box.textContent = '';
+  for (const [val, label] of options) {
+    const b = h('button', 'chip' + (small ? ' chip-sm' : ''), label);
+    b.setAttribute('aria-pressed', String(isOn(val)));
+    b.addEventListener('click', () => onPick(val));
+    box.appendChild(b);
+  }
+}
+
+/* ---------------------------------------------------------------------
+   かんたんタブ(モデルプラン付き)
+--------------------------------------------------------------------- */
+const PLAN_TYPES = {
+  saver: {
+    label: '節約型',
+    lead: '固定費をしぼって、貯蓄と身軽さを最速で積み上げるプラン。',
+    ratios: { rent: 0.25, food: 0.13, util: 0.04, comm: 0.02, social: 0.08, cloth: 0.04, other: 0.04 },
+    save: 0.40,
+  },
+  balance: {
+    label: 'バランス型',
+    lead: '家賃3割弱・貯蓄2割強の王道バランス。迷ったらこれ。',
+    ratios: { rent: 0.28, food: 0.15, util: 0.04, comm: 0.03, social: 0.12, cloth: 0.06, other: 0.06 },
+    save: 0.26,
+  },
+  rich: {
+    label: 'ゆとり型',
+    lead: '住まいと遊びにしっかりかける、いまを楽しむプラン。',
+    ratios: { rent: 0.33, food: 0.18, util: 0.05, comm: 0.03, social: 0.17, cloth: 0.08, other: 0.08 },
+    save: 0.08,
+  },
+};
+const PLAN_LABELS = { rent: '家賃', food: '食費', util: '水道・光熱', comm: '通信・スマホ', social: '交際・趣味', cloth: '衣服・日用品', other: 'その他' };
+function rentDesc(v) {
+  if (v < 45000) return '実家圏・シェアハウスや学生街の相場。都市部の一人暮らしは厳しめ';
+  if (v < 70000) return '地方都市の1K、東京なら郊外ワンルームが視野';
+  if (v < 100000) return '23区外縁〜郊外の1K、地方なら広めの1LDKも';
+  if (v < 150000) return '23区内の1K〜1DK、立地もこだわれるレンジ';
+  return '都心の1LDKクラスも視野に入るレンジ';
+}
+function foodDesc(v) {
+  if (v < 30000) return 'ほぼ自炊。外食は月数回のごほうび';
+  if (v < 45000) return '自炊中心+週1〜2回の外食';
+  if (v < 65000) return '外食と自炊が半々くらいの気楽さ';
+  return '外食中心でも回る予算';
+}
+function socialDesc(v) {
+  if (v < 15000) return '飲み会は月2〜3回、趣味は選んで';
+  if (v < 30000) return '飲みも趣味も月々ひと通り楽しめる';
+  if (v < 50000) return '旅行の積立や推し活にも回せる';
+  return 'かなり自由に使える遊び予算';
+}
+function saveDesc(v, rate) {
+  const yearly = v * 12;
+  let note;
+  if (rate >= 0.35) note = '3年で数百万円ペース。留学・転職・独立の選択肢が広がります';
+  else if (rate >= 0.2) note = '「手取りの2割」の王道ペース';
+  else if (rate >= 0.1) note = '最低ライン。ボーナスは貯蓄に回すと安心';
+  else note = '月々の貯蓄は薄め。ボーナス頼みになりがちな点は注意';
+  return '月' + fmtMan(v, 1) + ' → 年' + fmtMan(yearly, 0) + '。' + note;
+}
+
 function simpleResult(annual, bonusMonths, opts = {}) {
   const monthly = annual / (12 + bonusMonths);
   return {
@@ -1133,17 +1406,15 @@ function renderSimple() {
   $('s-hero-rate').textContent = '額面 ' + fmtMan(s.annual, 0) + ' × 手取り率 約' + Math.round(net / s.annual * 100) + '%';
   $('s-hero-monthly').innerHTML = '';
   $('s-hero-monthly').append(manNum(monthlyNet, 1), Object.assign(h('span', 'u'), { textContent: '万円' }));
-  $('s-hero-monthly-sub').textContent = s.bonusMonths ? '月給(額面 ' + fmtMan(monthly, 1) + ')から' : '額面 ' + fmtMan(monthly, 1) + ' から';
+  $('s-hero-monthly-sub').textContent = '月給(額面 ' + fmtMan(monthly, 1) + ')から';
   $('s-hero-bonus').innerHTML = '';
   $('s-hero-bonus').append(manNum(bonusNet, 0), Object.assign(h('span', 'u'), { textContent: '万円' }));
 
-  // 1年目コールアウト
   const first = $('s-firstyear');
   first.innerHTML = '<div class="co-title">💡 1年目はもう少し多い</div>' +
     '住民税(年 <strong>' + fmtMan(r.residentTax, 1) + '</strong>)は前年の所得に課税されるため、社会人1年目はほぼ引かれません。' +
     '1年目の手取りは約 <strong>' + fmtMan(net + r.residentTax, 0) + '</strong> の見込み。そのぶん2年目は手取りが下がるので油断は禁物!';
 
-  // 帯グラフ
   renderBreakdownBar($('s-chart'), [
     { label: '手取り', value: net, color: SERIES.keep, labelInside: true },
     { label: '社会保険料', value: r.si.total, color: SERIES.si },
@@ -1168,8 +1439,7 @@ function renderSimple() {
       const t = h('span', 'tip', label); t.dataset.tip = opt.tip; l.appendChild(t);
     } else l.appendChild(h('span', null, label));
     const rr = h('span', 'ps-r');
-    const y = h('span', 'yen num', (opt.minus ? '− ' : '') + fmtYen(yen));
-    rr.appendChild(y);
+    rr.appendChild(h('span', 'yen num', (opt.minus ? '− ' : '') + fmtYen(yen)));
     rr.appendChild(h('span', 'per-m num', '月あたり ' + fmtYen(yen / 12)));
     div.append(l, rr);
     ps.appendChild(div);
@@ -1184,27 +1454,52 @@ function renderSimple() {
   row('住民税', r.residentTax, { minus: true, swatch: '#4a3aa7', tip: '住んでいる自治体に納める税金(約10%)。前年の所得に課税されるため、1年目はほぼゼロ、2年目の6月から天引きが始まる。' });
   row('手取り(差引支給額)', net, { total: true });
 
-  // ひと月の目安
-  const g = $('s-guide');
-  g.innerHTML = '';
-  const guide = [
-    ['家賃の目安(手取りの30%)', monthlyNet * 0.30],
-    ['生活費の目安(50%)', monthlyNet * 0.50],
-    ['貯蓄・自己投資(20%)', monthlyNet * 0.20],
-  ];
-  for (const [label, v] of guide) {
+  // モデルプラン
+  chipGroup($('s-planChips'), Object.entries(PLAN_TYPES).map(([k, v]) => [k, v.label]),
+    v => v === s.planType, v => { s.planType = v; renderSimple(); saveState(); });
+  const plan = PLAN_TYPES[s.planType];
+  $('s-planLead').textContent = plan.lead;
+  const planBox = $('s-plan');
+  planBox.innerHTML = '';
+  const planVals = {};
+  for (const [key, ratio] of Object.entries(plan.ratios)) {
+    planVals[key] = Math.round(monthlyNet * ratio / 1000) * 1000;
     const div = h('div', 'ps-row');
-    div.appendChild(h('span', 'ps-l', label));
+    div.appendChild(h('span', 'ps-l', PLAN_LABELS[key] + '(' + Math.round(ratio * 100) + '%)'));
     const rr = h('span', 'ps-r');
-    rr.appendChild(h('span', 'yen num', fmtMan(v, 1)));
+    rr.appendChild(h('span', 'yen num', fmtMan(planVals[key], 1)));
     div.appendChild(rr);
-    g.appendChild(div);
+    planBox.appendChild(div);
   }
+  const saveV = Math.round(monthlyNet * plan.save / 1000) * 1000;
+  const saveRow = h('div', 'ps-row ps-total');
+  saveRow.appendChild(h('span', 'ps-l', '貯蓄(' + Math.round(plan.save * 100) + '%)'));
+  const saveR = h('span', 'ps-r');
+  saveR.appendChild(h('span', 'yen num', fmtMan(saveV, 1)));
+  saveRow.appendChild(saveR);
+  planBox.appendChild(saveRow);
+  const desc = $('s-planDesc');
+  desc.innerHTML = '';
+  const dRow = (tag, text) => {
+    const d = h('div', 'pd');
+    d.appendChild(h('b', null, tag));
+    d.appendChild(h('span', null, text));
+    desc.appendChild(d);
+  };
+  dRow('住まい', rentDesc(planVals.rent));
+  dRow('食事', foodDesc(planVals.food));
+  dRow('遊び', socialDesc(planVals.social));
+  dRow('貯蓄', saveDesc(saveV, plan.save));
+  // じっくりタブへの引き継ぎ用に保存
+  renderSimple.lastPlan = { monthlyNet, planVals };
 
   // 早見表
   const tb = $('s-quicktable');
   tb.innerHTML = '';
-  for (let man = 200; man <= 1000; man += 50) {
+  const mans = [];
+  for (let m = 200; m <= 1000; m += 50) mans.push(m);
+  mans.push(1200, 1500, 2000);
+  for (const man of mans) {
     const annual = man * 10000;
     const res = simpleResult(annual, s.bonusMonths).r;
     const tr = document.createElement('tr');
@@ -1216,10 +1511,7 @@ function renderSimple() {
       [manNum(res.net / (12 + s.bonusMonths), 1) + '万円', false],
       [manNum(res.si.total + res.incomeTax + res.residentTax, 0) + '万円', false],
     ];
-    for (const [text, strong] of cells) {
-      const td = h('td', strong ? 'strong num' : 'num', text);
-      tr.appendChild(td);
-    }
+    for (const [text, strong] of cells) tr.appendChild(h('td', strong ? 'strong num' : 'num', text));
     tb.appendChild(tr);
   }
 }
@@ -1228,13 +1520,13 @@ function renderSimple() {
    じっくりタブ
 --------------------------------------------------------------------- */
 const LIVING_ITEMS = [
-  ['food', '食費', 100000],
-  ['util', '水道・光熱', 40000],
-  ['comm', '通信・スマホ', 30000],
-  ['social', '交際・趣味', 100000],
-  ['cloth', '衣服・日用品', 60000],
-  ['scholar', '奨学金返済', 50000],
-  ['other', 'その他', 80000],
+  ['food', '食費', 200000],
+  ['util', '水道・光熱', 80000],
+  ['comm', '通信・スマホ', 60000],
+  ['social', '交際・趣味', 300000],
+  ['cloth', '衣服・日用品', 150000],
+  ['scholar', '奨学金返済', 100000],
+  ['other', 'その他', 300000],
 ];
 const HOUSING_MODES = [
   ['home', '実家'],
@@ -1242,9 +1534,22 @@ const HOUSING_MODES = [
   ['allowance', '住宅手当あり'],
   ['shataku', '借り上げ社宅・寮'],
 ];
+const SCENARIOS = [['base', '標準'], ['opt', '楽観'], ['pes', '悲観']];
+const SCEN_COLORS = { base: SERIES.keep, opt: SERIES.si, pes: SERIES.itax };
+let lastNetM1 = 200000; // 生活費プリセット用に直近の1年目月例手取りを保持
+
+// 給与入力方式を月給+賞与ヶ月に正規化
+function deepPay(d) {
+  if (d.payMode === 'annual') {
+    const monthly = Math.max(1, d.annualBase / 12);
+    const bonusMonths = d.annualBonus / monthly;
+    return { monthly, bonusMonths, firstAnnual: d.annualBase + d.annualBonus };
+  }
+  return { monthly: d.monthly, bonusMonths: d.bonusMonths, firstAnnual: d.monthly * (12 + d.bonusMonths) };
+}
 
 function housingOf(d) {
-  // 返り値: {selfPayM: 住居の自己負担(月), allowM: 課税される手当(月)}
+  // allowM: 課税される手当(月)。自己負担は年次計算側で(家賃連動対応のため)
   const hz = d.housing;
   switch (hz.mode) {
     case 'home': return { selfPayM: hz.familyPay, allowM: 0 };
@@ -1255,66 +1560,135 @@ function housingOf(d) {
   return { selfPayM: 0, allowM: 0 };
 }
 
-function renderDeepHousingFields() {
-  const d = state.deep;
-  // chips
-  const chips = $('d-housingChips');
-  chips.innerHTML = '';
-  for (const [val, label] of HOUSING_MODES) {
-    const b = h('button', 'chip', label);
-    b.setAttribute('aria-pressed', String(d.housing.mode === val));
-    b.addEventListener('click', () => { d.housing.mode = val; renderDeepHousingFields(); renderDeep(); saveState(); });
-    chips.appendChild(b);
+// シナリオごとのキャリア設定を返す
+function careerFor(d, which) {
+  const pay = deepPay(d);
+  const t = d.scenTime, m = d.scenMag;
+  if (d.career.mode === 'anchors') {
+    let anchors = d.career.anchors;
+    if (which === 'opt') anchors = anchors.map(a => ({ year: Math.max(2, a.year - t), annual: Math.round(a.annual * (1 + m / 100)) }));
+    if (which === 'pes') anchors = anchors.map(a => ({ year: a.year + t, annual: Math.round(a.annual * (1 - m / 100)) }));
+    // 1年目(給与入力から)を先頭に、年で整列・同年は後勝ち
+    const list = [{ year: 1, annual: pay.firstAnnual }];
+    for (const a of [...anchors].filter(a => a.year >= 2 && a.annual > 0).sort((x, y) => x.year - y.year)) {
+      if (list[list.length - 1].year === a.year) list[list.length - 1] = a;
+      else list.push(a);
+    }
+    return { annualAt: annualAtFactory(list) };
   }
-  // fields
-  const box = $('d-housingFields');
-  box.innerHTML = '';
-  const fld = (label, key, min, max, step, hint) => {
-    const f = h('div', 'field');
-    const head = h('div', 'field-head');
-    const id = 'd-hz-' + key;
-    const lb = h('label', 'lbl', label); lb.setAttribute('for', id);
-    const val = h('span', 'field-val num', fmtMan(d.housing[key], 1));
-    head.append(lb, val);
-    const range = document.createElement('input');
-    Object.assign(range, { type: 'range', id, min, max, step, value: d.housing[key] });
-    range.addEventListener('input', () => {
-      d.housing[key] = +range.value;
-      val.textContent = fmtMan(d.housing[key], 1);
-      setRangeFill(range);
-      renderDeep(); saveState();
-    });
-    f.append(head, range);
-    if (hint) f.appendChild(h('p', 'hint', hint));
-    box.appendChild(f);
-    setRangeFill(range);
+  const g = d.career;
+  if (which === 'opt') return {
+    raisePct: g.raisePct + 1,
+    promotions: g.promotions.map(p => ({ ...p, year: Math.max(2, p.year - t), amount: Math.round(p.amount * (1 + m / 100)) })),
   };
-  switch (d.housing.mode) {
-    case 'home':
-      fld('家に入れるお金(月)', 'familyPay', 0, 100000, 5000, '実家暮らしでも生活費として入れる人が多め。0円でもOK。');
-      break;
-    case 'rent':
-      fld('家賃(月)', 'rent', 20000, 200000, 5000);
-      break;
-    case 'allowance':
-      fld('家賃(月)', 'rent', 20000, 200000, 5000);
-      fld('住宅手当(月)', 'allowance', 0, 100000, 5000, '手当は給与に上乗せ=課税・社会保険の対象になります。');
-      break;
-    case 'shataku':
-      fld('自己負担(月)', 'selfPay', 0, 100000, 5000, '会社負担分は原則非課税。家賃との差額がまるごと浮きます。');
-      break;
+  if (which === 'pes') return {
+    raisePct: Math.max(0, g.raisePct - 1),
+    promotions: g.promotions.map(p => ({ ...p, year: p.year + t, amount: Math.round(p.amount * (1 - m / 100)) })),
+  };
+  return { raisePct: g.raisePct, promotions: g.promotions };
+}
+
+// 1シナリオ分の年次データ(給与+生活費+収支)
+function deepRows(which) {
+  const d = state.deep;
+  const pay = deepPay(d);
+  const hz = housingOf(d);
+  const rows = simulateYears({
+    monthly0: pay.monthly, bonusMonths: pay.bonusMonths,
+    ...careerFor(d, which),
+    years: d.years, age0: d.age,
+    otH: d.otH, otMode: d.otMode, allowHousingM: hz.allowM,
+    healthRate: d.healthRate / 100, idecoM: d.ideco * 10000,
+    firstYear: d.firstYearPartial ? { monthsFactor: 9 / 12, bonusFactor: 0.5 } : null,
+  });
+  const infl = (d.livingInflationPct || 0) / 100;
+  let cum = 0;
+  for (const r of rows) {
+    const months = 12 * r.mf;
+    // 月例手取り(賞与除く): 控除を月給比で按分
+    const monthlyPlus = r.monthly + hz.allowM + r.otPayM;
+    const monthlyPart = monthlyPlus * months / Math.max(1, r.taxableGross);
+    r.netMEx = (monthlyPlus * months - (r.si.total + r.incomeTax + r.residentTax) * monthlyPart) / months;
+    const grow = Math.pow(1 + infl, r.year - 1);
+    // 住まいの自己負担(月)
+    let houseM;
+    if (d.housing.mode === 'rent' && d.housing.rentMode === 'ratio') {
+      houseM = r.netMEx * d.housing.rentPct / 100;
+      if (d.housing.rentCap > 0) houseM = Math.min(houseM, d.housing.rentCap);
+    } else {
+      houseM = hz.selfPayM * grow;
+    }
+    // 生活費(月)
+    const items = [['住まい(自己負担)', houseM]];
+    let livingM = 0;
+    for (const [key, label] of LIVING_ITEMS) {
+      const it = d.living[key];
+      let v;
+      if (it.mode === 'ratio') {
+        v = r.netMEx * it.pct / 100;
+        if (it.cap > 0) v = Math.min(v, it.cap);
+      } else {
+        v = it.amount * grow;
+      }
+      if (v > 0) items.push([label, v]);
+      livingM += v;
+    }
+    const oneOffs = (d.oneOffs || []).filter(o => o.year === r.year && o.amount > 0);
+    const oneOffY = oneOffs.reduce((s, o) => s + o.amount, 0);
+    r.spendM = houseM + livingM;
+    r.spend = r.spendM * months + oneOffY;
+    r.oneOffs = oneOffs;
+    r.items = items;
+    r.balance = r.net - r.spend;
+    cum += r.balance;
+    r.cum = cum;
   }
+  return rows;
+}
+
+function renderDeepPayFields() {
+  const d = state.deep;
+  chipGroup($('d-payChips'), [['monthly', '月給+賞与で入力'], ['annual', '年収で入力']],
+    v => v === d.payMode,
+    v => {
+      if (v === d.payMode) return;
+      // 切替時にもう一方の値へ換算して引き継ぐ
+      if (v === 'annual') {
+        d.annualBase = Math.round(d.monthly * 12 / 10000) * 10000;
+        d.annualBonus = Math.round(d.monthly * d.bonusMonths / 10000) * 10000;
+      } else {
+        d.monthly = Math.round(d.annualBase / 12 / 1000) * 1000;
+        d.bonusMonths = d.monthly > 0 ? clampN(Math.round(d.annualBonus / d.monthly * 2) / 2, 0, 10) : 0;
+      }
+      d.payMode = v;
+      renderDeepPayFields(); syncDeepInputs(); renderDeep(); saveState();
+    });
+  $('d-payMonthlyBox').hidden = d.payMode !== 'monthly';
+  $('d-payAnnualBox').hidden = d.payMode !== 'annual';
+  if (d.payMode === 'annual') {
+    const pay = deepPay(d);
+    $('d-annualHint').textContent = '合計年収 ' + fmtMan(pay.firstAnnual, 0) + '(換算: 月給 ' + fmtMan(pay.monthly, 1) + '・賞与 ' + round1(pay.bonusMonths) + 'ヶ月分相当)';
+  }
+}
+
+function renderDeepCareerFields() {
+  const d = state.deep;
+  chipGroup($('d-careerChips'), [['growth', '昇給率+昇進で決める'], ['anchors', '年収を直接指定する']],
+    v => v === d.career.mode,
+    v => { d.career.mode = v; renderDeepCareerFields(); renderDeep(); saveState(); });
+  $('d-growthBox').hidden = d.career.mode !== 'growth';
+  $('d-anchorsBox').hidden = d.career.mode !== 'anchors';
 }
 
 function renderDeepPromos() {
   const d = state.deep;
   const box = $('d-promos');
   box.innerHTML = '';
-  d.promotions.forEach((p, idx) => {
+  d.career.promotions.forEach((p, idx) => {
     const row = h('div', 'promo-item');
     const yearSel = document.createElement('select');
-    yearSel.style.width = '110px';
-    for (let y = 2; y <= 20; y++) {
+    yearSel.style.width = '104px';
+    for (let y = 2; y <= 30; y++) {
       const o = document.createElement('option');
       o.value = y; o.textContent = y + '年目';
       if (p.year === y) o.selected = true;
@@ -1323,105 +1697,306 @@ function renderDeepPromos() {
     yearSel.setAttribute('aria-label', '昇進する年');
     yearSel.addEventListener('change', () => { p.year = +yearSel.value; renderDeep(); saveState(); });
     const amount = document.createElement('input');
-    Object.assign(amount, { type: 'number', min: 0, max: 50, step: 0.5, value: round1(p.amount / 10000) });
+    Object.assign(amount, { type: 'number', min: 0, max: 100, step: 0.5, value: round1(p.amount / 10000) });
     amount.style.width = '76px'; amount.style.textAlign = 'right';
     amount.setAttribute('aria-label', '月給の増加額(万円)');
-    amount.addEventListener('input', () => { p.amount = clampN((+amount.value || 0) * 10000, 0, 500000); renderDeep(); saveState(); });
+    amount.addEventListener('input', () => { p.amount = clampN((+amount.value || 0) * 10000, 0, 1000000); renderDeep(); saveState(); });
     const label = document.createElement('input');
     Object.assign(label, { type: 'text', value: p.label || '', placeholder: '役職名(任意)', maxLength: 10 });
     label.style.width = '120px';
     label.addEventListener('input', () => { p.label = label.value; renderDeep(); saveState(); });
     const del = h('button', 'btn-x', '×');
     del.setAttribute('aria-label', 'この昇進を削除');
-    del.addEventListener('click', () => { d.promotions.splice(idx, 1); renderDeepPromos(); renderDeep(); saveState(); });
+    del.addEventListener('click', () => { d.career.promotions.splice(idx, 1); renderDeepPromos(); renderDeep(); saveState(); });
     row.append(yearSel, amount, h('span', 'hint', '万円/月アップ'), label, del);
     box.appendChild(row);
   });
 }
 
-function renderDeepLiving() {
+function renderDeepAnchors() {
   const d = state.deep;
-  const box = $('d-living');
+  const box = $('d-anchors');
   box.innerHTML = '';
-  for (const [key, label, max] of LIVING_ITEMS) {
-    const f = h('div', 'field');
-    const head = h('div', 'field-head');
-    const id = 'd-lv-' + key;
-    const lb = h('label', 'lbl', label); lb.setAttribute('for', id);
-    const val = h('span', 'field-val num', fmtMan(d.living[key], 1));
-    head.append(lb, val);
-    const range = document.createElement('input');
-    Object.assign(range, { type: 'range', id, min: 0, max, step: 1000, value: d.living[key] });
-    range.addEventListener('input', () => {
-      d.living[key] = +range.value;
-      val.textContent = fmtMan(d.living[key], 1);
-      setRangeFill(range);
-      renderDeep(); saveState();
-    });
-    f.append(head, range);
-    box.appendChild(f);
-    setRangeFill(range);
+  d.career.anchors.forEach((a, idx) => {
+    const row = h('div', 'promo-item');
+    const yearSel = document.createElement('select');
+    yearSel.style.width = '104px';
+    for (let y = 2; y <= 30; y++) {
+      const o = document.createElement('option');
+      o.value = y; o.textContent = y + '年目';
+      if (a.year === y) o.selected = true;
+      yearSel.appendChild(o);
+    }
+    yearSel.setAttribute('aria-label', '到達する年');
+    yearSel.addEventListener('change', () => { a.year = +yearSel.value; renderDeep(); saveState(); });
+    const amount = document.createElement('input');
+    Object.assign(amount, { type: 'number', min: 100, max: 30000, step: 10, value: Math.round(a.annual / 10000) });
+    amount.style.width = '90px'; amount.style.textAlign = 'right';
+    amount.setAttribute('aria-label', '年収(万円)');
+    amount.addEventListener('input', () => { a.annual = clampN((+amount.value || 0) * 10000, 0, 300000000); renderDeep(); saveState(); });
+    const del = h('button', 'btn-x', '×');
+    del.setAttribute('aria-label', 'この年収ポイントを削除');
+    del.addEventListener('click', () => { d.career.anchors.splice(idx, 1); renderDeepAnchors(); renderDeep(); saveState(); });
+    row.append(yearSel, h('span', 'hint', 'に年収'), amount, h('span', 'hint', '万円'), del);
+    box.appendChild(row);
+  });
+}
+
+function renderDeepOneoffs() {
+  const d = state.deep;
+  const box = $('d-oneoffs');
+  box.innerHTML = '';
+  d.oneOffs.forEach((o, idx) => {
+    const row = h('div', 'promo-item');
+    const yearSel = document.createElement('select');
+    yearSel.style.width = '96px';
+    for (let y = 1; y <= 30; y++) {
+      const op = document.createElement('option');
+      op.value = y; op.textContent = y + '年目';
+      if (o.year === y) op.selected = true;
+      yearSel.appendChild(op);
+    }
+    yearSel.setAttribute('aria-label', '支出する年');
+    yearSel.addEventListener('change', () => { o.year = +yearSel.value; renderDeep(); saveState(); });
+    const amount = document.createElement('input');
+    Object.assign(amount, { type: 'number', min: 0, max: 3000, step: 5, value: round1(o.amount / 10000) });
+    amount.style.width = '80px'; amount.style.textAlign = 'right';
+    amount.setAttribute('aria-label', '金額(万円)');
+    amount.addEventListener('input', () => { o.amount = clampN((+amount.value || 0) * 10000, 0, 30000000); renderDeep(); saveState(); });
+    const label = document.createElement('input');
+    Object.assign(label, { type: 'text', value: o.label || '', placeholder: '例: 海外旅行', maxLength: 10 });
+    label.style.width = '110px';
+    label.addEventListener('input', () => { o.label = label.value; renderDeep(); saveState(); });
+    const del = h('button', 'btn-x', '×');
+    del.setAttribute('aria-label', 'この支出を削除');
+    del.addEventListener('click', () => { d.oneOffs.splice(idx, 1); renderDeepOneoffs(); renderDeep(); saveState(); });
+    row.append(yearSel, amount, h('span', 'hint', '万円'), label, del);
+    box.appendChild(row);
+  });
+}
+
+function renderDeepHousingFields() {
+  const d = state.deep;
+  const chips = $('d-housingChips');
+  chips.innerHTML = '';
+  for (const [val, label] of HOUSING_MODES) {
+    const b = h('button', 'chip', label);
+    b.setAttribute('aria-pressed', String(d.housing.mode === val));
+    b.addEventListener('click', () => { d.housing.mode = val; renderDeepHousingFields(); renderDeep(); saveState(); });
+    chips.appendChild(b);
+  }
+  const box = $('d-housingFields');
+  box.innerHTML = '';
+  const onchange = () => { renderDeep(); saveState(); };
+  switch (d.housing.mode) {
+    case 'home':
+      sliderNumField(box, { label: '家に入れるお金(月)', min: 0, max: 200000, step: 5000, numMax: 100, get: () => d.housing.familyPay, set: v => { d.housing.familyPay = v; }, onchange, hint: '実家暮らしでも生活費として入れる人が多め。0円でもOK。' });
+      break;
+    case 'rent': {
+      // 決め方: 金額指定 or 手取り連動
+      const tg = h('div', 'field lv2');
+      const head = h('div', 'field-head');
+      head.appendChild(h('span', 'lbl', '家賃の決め方'));
+      const mt = h('span', 'mini-toggle');
+      for (const [val, label] of [['fixed', '金額で指定'], ['ratio', '手取りの%で決める']]) {
+        const b = h('button', null, label);
+        b.setAttribute('aria-pressed', String(d.housing.rentMode === val));
+        b.addEventListener('click', () => { d.housing.rentMode = val; renderDeepHousingFields(); renderDeep(); saveState(); });
+        mt.appendChild(b);
+      }
+      head.appendChild(mt);
+      tg.appendChild(head);
+      box.appendChild(tg);
+      if (d.housing.rentMode === 'ratio') {
+        const f = h('div', 'field');
+        const fh = h('div', 'field-head');
+        fh.appendChild(h('span', 'lbl', '家賃 = 月例手取りの'));
+        const wrap = h('span', 'head-input');
+        const pctIn = document.createElement('input');
+        Object.assign(pctIn, { type: 'number', min: 5, max: 60, step: 1, value: d.housing.rentPct });
+        pctIn.addEventListener('input', () => { d.housing.rentPct = clampN(+pctIn.value || 28, 5, 60); onchange(); });
+        wrap.appendChild(pctIn);
+        wrap.appendChild(h('span', 'u', '%'));
+        fh.appendChild(wrap);
+        f.appendChild(fh);
+        box.appendChild(f);
+        sliderNumField(box, { label: '家賃の上限(0=なし)', min: 0, max: 300000, step: 5000, numMax: 100, get: () => d.housing.rentCap, set: v => { d.housing.rentCap = v; }, onchange, hint: '手取りが増えると家賃も上がる想定。昇給に合わせて住み替えるイメージです。' });
+      } else {
+        sliderNumField(box, { label: '家賃(月)', min: 20000, max: 400000, step: 5000, numMax: 200, get: () => d.housing.rent, set: v => { d.housing.rent = v; }, onchange });
+      }
+      break;
+    }
+    case 'allowance':
+      sliderNumField(box, { label: '家賃(月)', min: 20000, max: 400000, step: 5000, numMax: 200, get: () => d.housing.rent, set: v => { d.housing.rent = v; }, onchange });
+      sliderNumField(box, { label: '住宅手当(月)', min: 0, max: 150000, step: 5000, numMax: 50, get: () => d.housing.allowance, set: v => { d.housing.allowance = v; }, onchange, hint: '手当は給与に上乗せ=課税・社会保険の対象になります。' });
+      break;
+    case 'shataku':
+      sliderNumField(box, { label: '自己負担(月)', min: 0, max: 300000, step: 5000, numMax: 100, get: () => d.housing.selfPay, set: v => { d.housing.selfPay = v; }, onchange, hint: '会社負担分は原則非課税。家賃との差額がまるごと浮きます。' });
+      break;
   }
 }
 
-function deepRows() {
+function renderDeepLiving() {
   const d = state.deep;
-  const hz = housingOf(d);
-  const rows = simulateYears({
-    monthly0: d.monthly, bonusMonths: d.bonusMonths, raisePct: d.raisePct,
-    promotions: d.promotions, years: d.years, age0: d.age,
-    otH: d.otH, otMode: d.otMode, allowHousingM: hz.allowM,
-    healthRate: d.healthRate / 100, idecoM: d.ideco * 10000,
-  });
-  const livingM = LIVING_ITEMS.reduce((s, [k]) => s + d.living[k], 0);
-  const spendM = livingM + hz.selfPayM;
-  let cum = 0;
-  for (const r of rows) {
-    r.spend = spendM * 12;
-    r.balance = r.net - r.spend; // iDeCo掛金は手取りから引かれず貯蓄扱い
-    cum += r.balance;
-    r.cum = cum;
+  // プリセット
+  chipGroup($('d-livingPresets'), Object.entries(PLAN_TYPES).map(([k, v]) => [k, v.label]),
+    () => false,
+    key => {
+      const plan = PLAN_TYPES[key];
+      const map = { food: 'food', util: 'util', comm: 'comm', social: 'social', cloth: 'cloth', other: 'other' };
+      for (const [lk, pk] of Object.entries(map)) {
+        d.living[lk].mode = 'fixed';
+        d.living[lk].amount = Math.round(lastNetM1 * plan.ratios[pk] / 1000) * 1000;
+      }
+      renderDeepLiving(); renderDeep(); saveState();
+    }, true);
+  const box = $('d-living');
+  box.innerHTML = '';
+  const onchange = () => { renderDeep(); saveState(); };
+  for (const [key, label, max] of LIVING_ITEMS) {
+    const it = d.living[key];
+    const f = h('div', 'field');
+    const head = h('div', 'field-head');
+    head.appendChild(h('span', 'lbl', label));
+    // 定額/連動のミニトグル(こだわりレベルのみ表示)
+    const mt = h('span', 'mini-toggle lv3');
+    for (const [val, mlabel] of [['fixed', '定額'], ['ratio', '手取り連動']]) {
+      const b = h('button', null, mlabel);
+      b.setAttribute('aria-pressed', String(it.mode === val));
+      b.addEventListener('click', () => { it.mode = val; renderDeepLiving(); renderDeep(); saveState(); });
+      mt.appendChild(b);
+    }
+    head.appendChild(mt);
+    if (it.mode === 'ratio') {
+      const wrap = h('span', 'head-input');
+      const pctIn = document.createElement('input');
+      Object.assign(pctIn, { type: 'number', min: 0, max: 50, step: 1, value: it.pct });
+      pctIn.style.width = '58px';
+      pctIn.setAttribute('aria-label', label + 'の手取り比率(%)');
+      pctIn.addEventListener('input', () => { it.pct = clampN(+pctIn.value || 0, 0, 50); onchange(); });
+      wrap.appendChild(pctIn);
+      wrap.appendChild(h('span', 'u', '%'));
+      const capIn = document.createElement('input');
+      Object.assign(capIn, { type: 'number', min: 0, max: 100, step: 0.5, value: round1(it.cap / 10000) });
+      capIn.style.width = '64px';
+      capIn.setAttribute('aria-label', label + 'の上限(万円)');
+      capIn.addEventListener('input', () => { it.cap = clampN((+capIn.value || 0) * 10000, 0, 1000000); onchange(); });
+      wrap.appendChild(capIn);
+      wrap.appendChild(h('span', 'u', '万円まで'));
+      head.appendChild(wrap);
+      f.appendChild(head);
+      f.appendChild(h('p', 'hint', '月例手取りの' + it.pct + '%。手取りが増えるといっしょに増えます(上限' + (it.cap > 0 ? fmtMan(it.cap, 1) : 'なし') + ')。'));
+    } else {
+      const wrap = h('span', 'head-input');
+      const num = document.createElement('input');
+      Object.assign(num, { type: 'number', min: 0, max: 100, step: 0.1, value: round1(it.amount / 10000) });
+      num.setAttribute('aria-label', label + '(万円)');
+      num.addEventListener('input', () => {
+        it.amount = clampN((+num.value || 0) * 10000, 0, 1000000);
+        range.value = clampN(it.amount, 0, max);
+        setRangeFill(range);
+        onchange();
+      });
+      wrap.appendChild(num);
+      wrap.appendChild(h('span', 'u', '万円'));
+      head.appendChild(wrap);
+      f.appendChild(head);
+      const range = document.createElement('input');
+      Object.assign(range, { type: 'range', min: 0, max, step: 1000, value: clampN(it.amount, 0, max) });
+      range.setAttribute('aria-label', label + 'スライダー');
+      range.addEventListener('input', () => {
+        it.amount = +range.value;
+        num.value = round1(it.amount / 10000);
+        setRangeFill(range);
+        onchange();
+      });
+      f.appendChild(range);
+      setRangeFill(range);
+    }
+    box.appendChild(f);
   }
-  return { rows, livingM, spendM, hz };
 }
 
 function renderDeep() {
   const d = state.deep;
-  const { rows, spendM, hz } = deepRows();
-  const y1 = rows[0];
-  const monthlyNet1 = monthlyNetOf(y1, { monthly: y1.monthly, allowTaxableM: hz.allowM + y1.otPayM });
-  const monthlyBalance = monthlyNet1 - spendM;
-  const last = rows[rows.length - 1];
+  const compare = d.compare;
+  const rowsBase = deepRows('base');
+  const rowsOpt = compare ? deepRows('opt') : null;
+  const rowsPes = compare ? deepRows('pes') : null;
+  if (!compare) d.scenario = 'base';
+  const active = d.scenario === 'opt' && rowsOpt ? rowsOpt : d.scenario === 'pes' && rowsPes ? rowsPes : rowsBase;
+  const y1 = active[0];
+  const last = active[active.length - 1];
+  const monthlyNet1 = y1.netMEx;
+  lastNetM1 = monthlyNet1;
+  const monthlyBalance = monthlyNet1 - y1.spendM;
+  const scenLabel = { base: '標準', opt: '楽観', pes: '悲観' }[d.scenario];
+
+  // シナリオ切替バー
+  $('d-scenBar').hidden = !compare;
+  if (compare) {
+    chipGroup($('d-scenChips'), SCENARIOS, v => v === d.scenario,
+      v => { d.scenario = v; renderDeep(); saveState(); }, true);
+  }
 
   // stats
   const stats = $('d-stats');
   stats.innerHTML = '';
-  const stat = (label, valueHtmlBuilder, sub, hero) => {
+  const stat = (label, build, sub, hero) => {
     const div = h('div', 'stat' + (hero ? ' hero' : ''));
     div.appendChild(h('div', 's-label', label));
     const v = h('div', 's-value num');
-    valueHtmlBuilder(v);
+    build(v);
     div.appendChild(v);
     if (sub) div.appendChild(h('div', 's-sub', sub));
     stats.appendChild(div);
   };
-  stat(d.years + '年間の貯蓄(累計)', v => { v.append(manNum(last.cum, 0), Object.assign(h('span', 'u'), { textContent: '万円' })); },
+  const u = () => Object.assign(h('span', 'u'), { textContent: '万円' });
+  stat(d.years + '年間の貯蓄' + (compare ? '(' + scenLabel + ')' : ''), v => { v.append(manNum(last.cum, 0), u()); },
     '最終年の月給 ' + fmtMan(last.monthly, 1), true);
-  stat('1年目の手取り', v => { v.append(manNum(y1.net, 0), Object.assign(h('span', 'u'), { textContent: '万円' })); },
-    '額面 ' + fmtMan(y1.taxableGross, 0) + '(残業代込み)');
+  stat('1年目の手取り', v => { v.append(manNum(y1.net, 0), u()); },
+    '額面 ' + fmtMan(y1.taxableGross, 0) + (d.firstYearPartial ? '(4月入社・9ヶ月分)' : '(残業代込み)'));
   stat('月々の残り(1年目)', v => {
-    v.append((monthlyBalance >= 0 ? '+' : '−') + manNum(Math.abs(monthlyBalance), 1), Object.assign(h('span', 'u'), { textContent: '万円' }));
+    v.append((monthlyBalance >= 0 ? '+' : '−') + manNum(Math.abs(monthlyBalance), 1), u());
     v.style.color = monthlyBalance >= 0 ? 'var(--good-text)' : 'var(--bad-text)';
-  }, '手取り月 ' + fmtMan(monthlyNet1, 1) + ' − 支出 ' + fmtMan(spendM, 1));
+  }, '手取り月 ' + fmtMan(monthlyNet1, 1) + ' − 支出 ' + fmtMan(y1.spendM, 1));
+  const hoursY1 = (TAXC.scheduledHoursM + d.otH) * 12 * y1.mf;
+  stat('手取り時給(1年目)', v => {
+    v.append(Math.round(y1.net / hoursY1).toLocaleString('ja-JP'), Object.assign(h('span', 'u'), { textContent: '円' }));
+  }, '額面 ' + Math.round(y1.taxableGross / hoursY1).toLocaleString('ja-JP') + '円/時・残業込み年' + Math.round(hoursY1).toLocaleString('ja-JP') + 'h');
+
+  // シナリオ比較サマリー
+  $('d-scenSummary').hidden = !compare;
+  if (compare) {
+    $('d-scenSummarySub').textContent = d.years + '年間・楽観=時期−' + d.scenTime + '年/金額+' + d.scenMag + '%・悲観=その逆';
+    const body = $('d-scenSummaryBody');
+    body.innerHTML = '';
+    const sets = { base: rowsBase, opt: rowsOpt, pes: rowsPes };
+    for (const [key, label] of SCENARIOS) {
+      const rows = sets[key];
+      const lastR = rows[rows.length - 1];
+      const tr = document.createElement('tr');
+      if (key === d.scenario) tr.className = 'promo-row';
+      const td0 = h('td', null);
+      const dot = h('span', 'swatch-dot');
+      dot.style.background = SCEN_COLORS[key];
+      td0.append(dot, label);
+      tr.appendChild(td0);
+      tr.appendChild(h('td', 'num', manNum(lastR.taxableGross, 0) + '万円'));
+      tr.appendChild(h('td', 'num strong', manNum(lastR.net, 0) + '万円'));
+      tr.appendChild(h('td', 'num strong', manNum(lastR.cum, 0) + '万円'));
+      body.appendChild(tr);
+    }
+  }
 
   // callouts
   const co = $('d-callouts');
   co.innerHTML = '';
-  if (rows.length >= 2 && rows[1].net < rows[0].net) {
+  if (active.length >= 2 && active[1].net < active[0].net && !d.firstYearPartial) {
     const c = h('div', 'callout warn');
     c.innerHTML = '<div class="co-title">⚠ 「2年目の壁」に注意</div>' +
-      '2年目から住民税(年 ' + fmtMan(rows[1].residentTax, 1) + ')の天引きが始まり、手取りは ' +
-      fmtMan(rows[0].net, 0) + ' → <strong>' + fmtMan(rows[1].net, 0) + '</strong> に一度下がります。1年目の感覚でお金を使うと苦しくなりがち。';
+      '2年目から住民税(年 ' + fmtMan(active[1].residentTax, 1) + ')の天引きが始まり、手取りは ' +
+      fmtMan(active[0].net, 0) + ' → <strong>' + fmtMan(active[1].net, 0) + '</strong> に一度下がります。1年目の感覚でお金を使うと苦しくなりがち。';
     co.appendChild(c);
   }
   if (monthlyBalance < 0) {
@@ -1434,13 +2009,13 @@ function renderDeep() {
     co.appendChild(c);
   }
 
+  // 生活費合計
+  $('d-livingTotal').textContent = fmtMan(y1.spendM - y1.items[0][1], 1) + ' + 住まい ' + fmtMan(y1.items[0][1], 1);
+
   // budget bars
   const bud = $('d-budget');
   bud.innerHTML = '';
-  const items = [['住まい(自己負担)', hz.selfPayM]].concat(
-    LIVING_ITEMS.map(([k, label]) => [label, d.living[k]]).filter(([, v]) => v > 0)
-  );
-  for (const [label, v] of items) {
+  for (const [label, v] of y1.items) {
     const row = h('div', 'bud-row');
     row.appendChild(h('span', 'bud-label', label));
     const track = h('div', 'bud-track');
@@ -1452,38 +2027,53 @@ function renderDeep() {
     bud.appendChild(row);
   }
   const sum = h('div', 'bud-sum');
-  sum.appendChild(h('span', null, '手取り ' + fmtMan(monthlyNet1, 1) + ' − 支出 ' + fmtMan(spendM, 1)));
+  sum.appendChild(h('span', null, '手取り ' + fmtMan(monthlyNet1, 1) + ' − 支出 ' + fmtMan(y1.spendM, 1)));
   const rest = h('span', 'num', '残り ' + (monthlyBalance >= 0 ? '+' : '−') + fmtMan(Math.abs(monthlyBalance), 1));
   rest.style.color = monthlyBalance >= 0 ? 'var(--good-text)' : 'var(--bad-text)';
   sum.appendChild(rest);
   bud.appendChild(sum);
-  const note = h('p', 'chart-note', 'バーの長さは手取り月額に対する割合。賞与(手取り 約' + fmtMan(y1.net - monthlyNet1 * 12, 0) + '/年)は月々には含めていません。');
-  bud.appendChild(note);
+  bud.appendChild(h('p', 'chart-note', 'バーの長さは月例手取り(賞与除く)に対する割合。賞与(手取り 約' + fmtMan(Math.max(0, y1.net - monthlyNet1 * 12 * y1.mf), 0) + '/年)と単発支出は月々には含めていません。'));
 
   // charts
-  renderTrendChart($('d-trend'), rows);
-  makeLegend($('d-trendLegend'), [
-    { label: '額面年収', color: SERIES.context, line: true },
-    { label: '手取り', color: SERIES.keep, line: true },
-    { label: '昇進の年', color: SERIES.keep },
-  ]);
-  renderCumChart($('d-cum'), rows);
-  $('d-cumNote').textContent = rows.some(r => r.cum < 0)
+  if (compare) {
+    $('d-trendTitle').textContent = '手取りの推移(シナリオ比較)';
+    renderTrendChart($('d-trend'), [
+      { label: '標準', color: SCEN_COLORS.base, rows: rowsBase, get: r => r.net },
+      { label: '楽観', color: SCEN_COLORS.opt, rows: rowsOpt, get: r => r.net },
+      { label: '悲観', color: SCEN_COLORS.pes, rows: rowsPes, get: r => r.net },
+    ]);
+    makeLegend($('d-trendLegend'), [
+      { label: '標準', color: SCEN_COLORS.base, line: true },
+      { label: '楽観', color: SCEN_COLORS.opt, line: true },
+      { label: '悲観', color: SCEN_COLORS.pes, line: true },
+    ]);
+  } else {
+    $('d-trendTitle').textContent = '年収と手取りの推移';
+    renderTrendChart($('d-trend'), [
+      { label: '額面年収', color: SERIES.context, rows: active, get: r => r.taxableGross },
+      { label: '手取り', color: SERIES.keep, rows: active, get: r => r.net },
+    ], { markerSeries: 1 });
+    makeLegend($('d-trendLegend'), [
+      { label: '額面年収', color: SERIES.context, line: true },
+      { label: '手取り', color: SERIES.keep, line: true },
+      { label: '昇進の年', color: SERIES.keep },
+    ]);
+  }
+  renderCumChart($('d-cum'), active);
+  $('d-cumNote').textContent = (compare ? '「' + scenLabel + '」シナリオの累計。' : '') + (active.some(r => r.cum < 0)
     ? '赤いバーは累計がマイナス(貯金を取り崩している状態)です。'
-    : '毎年の「手取り − 支出」を積み上げた概算です。昇給・昇進で後半ほど貯まりやすくなります。';
+    : '毎年の「手取り − 支出」を積み上げた概算です。昇給・昇進で後半ほど貯まりやすくなります。');
 
   // year table
   const tb = $('d-yearTable');
   tb.innerHTML = '';
-  for (const r of rows) {
+  for (const r of active) {
     const tr = document.createElement('tr');
     if (r.promo) tr.className = 'promo-row';
     const first = h('td', 'num');
     first.append(r.year + '年目');
-    if (r.promo) {
-      const b = h('span', 'badge', (r.promo.label || '昇進') + '');
-      first.appendChild(b);
-    }
+    if (r.promo) first.appendChild(h('span', 'badge', r.promo.label));
+    for (const o of r.oneOffs.slice(0, 2)) first.appendChild(h('span', 'badge oneoff', o.label || '単発'));
     tr.appendChild(first);
     const tds = [
       [r.age + '歳', ''],
@@ -1509,12 +2099,22 @@ const C_HOUSING = [
   ['shataku', '借り上げ社宅・寮'],
 ];
 
+// 会社の給与入力を月給+賞与ヶ月に正規化
+function payOf(c) {
+  if (c.payMode === 'annual') {
+    const monthly = Math.max(1, c.annualBase / 12);
+    return { monthly, bonusMonths: c.annualBonus / monthly };
+  }
+  return { monthly: c.monthly, bonusMonths: c.bonusMonths };
+}
+
 function compResult(c, rentAssumption) {
-  const otPayM = c.otMode === 'full' ? c.monthly / TAXC.scheduledHoursM * 1.25 * c.otH : 0;
+  const pay = payOf(c);
+  const otPayM = c.otMode === 'full' ? pay.monthly / TAXC.scheduledHoursM * 1.25 * c.otH : 0;
   const allowM = (c.housing === 'allowance' ? c.allowance : 0) + otPayM;
   const commuteM = c.commutePaid ? c.commuteCost : 0;
   const r = calcYear({
-    monthly: c.monthly, bonusMonths: c.bonusMonths, allowTaxableM: allowM,
+    monthly: pay.monthly, bonusMonths: pay.bonusMonths, allowTaxableM: allowM,
     commuteM, age: state.deep.age ?? 22, healthRate: state.deep.healthRate / 100, idecoM: 0,
     residentTaxOf: 'same',
   });
@@ -1523,9 +2123,8 @@ function compResult(c, rentAssumption) {
   const perksY = c.perks * 12;
   const disposable = r.net - housingSelfY - commuteSelfY + perksY;
   const hoursY = (TAXC.scheduledHoursM + c.otH) * 12;
-  // 10年累計(実質)— 昇給と住民税タイムラグ込み
   const rows = simulateYears({
-    monthly0: c.monthly, bonusMonths: c.bonusMonths, raisePct: c.raisePct,
+    monthly0: pay.monthly, bonusMonths: pay.bonusMonths, raisePct: c.raisePct,
     promotions: [], years: 10, age0: state.deep.age ?? 22,
     otH: c.otH, otMode: c.otMode, allowHousingM: c.housing === 'allowance' ? c.allowance : 0,
     healthRate: state.deep.healthRate / 100, idecoM: 0,
@@ -1554,6 +2153,25 @@ function renderCompCards() {
       head.appendChild(del);
     }
     card.appendChild(head);
+
+    // 給与入力方式
+    const payChips = h('div', 'chips', null);
+    payChips.style.marginBottom = '12px';
+    chipGroup(payChips, [['monthly', '月給で入力'], ['annual', '年収で入力']],
+      v => v === c.payMode,
+      v => {
+        if (v === c.payMode) return;
+        if (v === 'annual') {
+          c.annualBase = Math.round(c.monthly * 12 / 10000) * 10000;
+          c.annualBonus = Math.round(c.monthly * c.bonusMonths / 10000) * 10000;
+        } else {
+          c.monthly = Math.round(c.annualBase / 12 / 1000) * 1000;
+          c.bonusMonths = c.monthly > 0 ? clampN(Math.round(c.annualBonus / c.monthly * 2) / 2, 0, 10) : 0;
+        }
+        c.payMode = v;
+        renderCompCards(); renderCompResults(); saveState();
+      }, true);
+    card.appendChild(payChips);
 
     const grid = h('div', 'grid2');
     const numField = (label, key, min, max, step, unit, toDisp, fromDisp) => {
@@ -1587,20 +2205,30 @@ function renderCompCards() {
       sel.addEventListener('change', () => { onchange(sel.value); renderCompResults(); saveState(); });
       f.appendChild(sel);
       grid.appendChild(f);
-      return f;
     };
-    numField('月給', 'monthly', 12, 100, 0.5, '万円', v => round1(v / 10000), v => v * 10000);
-    numField('賞与(年)', 'bonusMonths', 0, 8, 0.5, 'ヶ月', v => v, v => v);
-    numField('昇給率', 'raisePct', 0, 8, 0.1, '%/年', v => v, v => v);
-    numField('残業(月)', 'otH', 0, 80, 5, '時間', v => v, v => v);
+    if (c.payMode === 'annual') {
+      numField('基本給(年)', 'annualBase', 100, 10000, 10, '万円', v => Math.round(v / 10000), v => v * 10000);
+      numField('賞与(年)', 'annualBonus', 0, 5000, 10, '万円', v => Math.round(v / 10000), v => v * 10000);
+    } else {
+      numField('月給', 'monthly', 12, 300, 0.5, '万円', v => round1(v / 10000), v => v * 10000);
+      numField('賞与(年)', 'bonusMonths', 0, 10, 0.5, 'ヶ月', v => v, v => v);
+    }
+    numField('昇給率', 'raisePct', 0, 15, 0.1, '%/年', v => v, v => v);
+    numField('残業(月)', 'otH', 0, 100, 5, '時間', v => v, v => v);
     selField('残業代', 'otMode', [['full', '全額支給'], ['fixed', '固定残業代込み']], v => { c.otMode = v; });
     selField('住宅サポート', 'housing', C_HOUSING, v => { c.housing = v; renderCompCards(); });
-    if (c.housing === 'allowance') numField('住宅手当(月)', 'allowance', 0, 10, 0.5, '万円', v => round1(v / 10000), v => v * 10000);
-    if (c.housing === 'shataku') numField('社宅の自己負担(月)', 'selfPay', 0, 10, 0.5, '万円', v => round1(v / 10000), v => v * 10000);
+    if (c.housing === 'allowance') numField('住宅手当(月)', 'allowance', 0, 20, 0.5, '万円', v => round1(v / 10000), v => v * 10000);
+    if (c.housing === 'shataku') numField('社宅の自己負担(月)', 'selfPay', 0, 30, 0.5, '万円', v => round1(v / 10000), v => v * 10000);
     selField('通勤定期代', 'commutePaid', [['true', '会社が支給'], ['false', '自己負担']], v => { c.commutePaid = v === 'true'; });
-    numField('定期代(月)', 'commuteCost', 0, 5, 0.1, '万円', v => round1(v / 10000), v => v * 10000);
-    numField('福利厚生(月換算)', 'perks', 0, 10, 0.5, '万円', v => round1(v / 10000), v => v * 10000);
+    numField('定期代(月)', 'commuteCost', 0, 10, 0.1, '万円', v => round1(v / 10000), v => v * 10000);
+    numField('福利厚生(月換算)', 'perks', 0, 30, 0.5, '万円', v => round1(v / 10000), v => v * 10000);
     card.appendChild(grid);
+    if (c.payMode === 'annual') {
+      const pay = payOf(c);
+      const hintA = h('p', 'hint', '換算: 月給 ' + fmtMan(pay.monthly, 1) + '・賞与 ' + round1(pay.bonusMonths) + 'ヶ月分相当(残業単価もこの月給から計算)');
+      hintA.style.marginTop = '6px';
+      card.appendChild(hintA);
+    }
     const hintP = h('p', 'hint', '福利厚生=食堂補助・企業型DC・持株会奨励金など、お金に換算できるもの。');
     hintP.style.marginTop = '6px';
     card.appendChild(hintP);
@@ -1618,7 +2246,6 @@ function renderCompResults() {
   const list = comp.companies.filter(c => c.on);
   const results = list.map(c => ({ c, ...compResult(c, comp.rent) }));
 
-  // callout: 額面と実質の逆転
   const co = $('c-callout');
   co.innerHTML = '';
   if (results.length >= 2) {
@@ -1626,8 +2253,7 @@ function renderCompResults() {
     const byDisp = [...results].sort((a, b) => b.disposable - a.disposable);
     if (byGross[0].c !== byDisp[0].c) {
       const cEl = h('div', 'callout');
-      const t = h('div', 'co-title', '🔄 額面と実質で順位が入れかわりました');
-      cEl.appendChild(t);
+      cEl.appendChild(h('div', 'co-title', '🔄 額面と実質で順位が入れかわりました'));
       const p = h('div');
       p.append('額面年収は ');
       p.appendChild(h('strong', null, byGross[0].c.name));
@@ -1639,7 +2265,6 @@ function renderCompResults() {
     }
   }
 
-  // table
   const thead = $('c-thead');
   thead.innerHTML = '';
   const hrow = document.createElement('tr');
@@ -1669,7 +2294,7 @@ function renderCompResults() {
   };
   addRow('額面年収(残業代込み)', res => res.r.taxableGross, { fmt: v => manNum(v, 0) + '万円' });
   addRow('手取り年収', res => res.r.net, { best: 'max', fmt: v => manNum(v, 0) + '万円' });
-  addRow('住居の自己負担(年)', res => -res.housingSelfY, { fmt: v => '− ' + manNum(-v, 0) + '万円' });
+  addRow('住居の自己負担(年)', res => -res.housingSelfY, { fmt: v => v === 0 ? '0円' : '− ' + manNum(-v, 0) + '万円' });
   addRow('通勤の自己負担(年)', res => -res.commuteSelfY, { fmt: v => v === 0 ? '0円' : '− ' + manNum(-v, 1) + '万円' });
   addRow('福利厚生の価値(年)', res => res.perksY, { fmt: v => v === 0 ? '—' : '+ ' + manNum(v, 0) + '万円' });
   addRow('★ 実質的に使えるお金(年)', res => res.disposable, { best: 'max', hero: true, fmt: v => manNum(v, 0) + '万円' });
@@ -1678,7 +2303,6 @@ function renderCompResults() {
   addRow('実質時給', res => res.hourly, { best: 'max', fmt: v => fmtYen(v) });
   addRow('10年累計(実質・昇給込み)', res => res.cum10, { best: 'max', fmt: v => manNum(v, 0) + '万円' });
 
-  // bars
   const chart = $('c-chart');
   chart.innerHTML = '';
   const maxV = Math.max(...results.map(r => r.disposable), 1);
@@ -1725,14 +2349,17 @@ function bindPair(numId, rangeId, get, set, opts = {}) {
     opts.onchange();
   });
   sync();
+  return sync;
 }
 function bindSliderVal(rangeId, valId, get, set, fmt, onchange) {
   const range = $(rangeId), val = $(valId);
   const sync = () => { range.value = get(); val.textContent = fmt(get()); setRangeFill(range); };
   range.addEventListener('input', () => { set(+range.value); val.textContent = fmt(get()); setRangeFill(range); onchange(); });
   sync();
+  return sync;
 }
 
+let renderersReady = false;
 function switchTab(name) {
   state.tab = name;
   for (const t of ['simple', 'deep', 'comp']) {
@@ -1747,7 +2374,6 @@ function switchTab(name) {
   }
   saveState();
 }
-let renderersReady = false;
 
 function applyTheme(fromClick) {
   const t = state.theme;
@@ -1764,21 +2390,30 @@ function applyTheme(fromClick) {
   btn.innerHTML = icons[t] + '<span>' + labels[t] + '</span>';
 }
 
+// じっくりタブの静的入力を状態から再同期(給与方式切替・プラン読み込み時に使用)
+let syncFns = [];
+function syncDeepInputs() { for (const fn of syncFns) fn(); }
+
+function applyDetailLevel() {
+  $('panel-deep').dataset.level = String(state.deep.detailLevel);
+  chipGroup($('d-levelChips'), [['1', 'シンプル'], ['2', '標準'], ['3', 'こだわり']],
+    v => +v === state.deep.detailLevel,
+    v => { state.deep.detailLevel = +v; applyDetailLevel(); renderDeep(); saveState(); }, true);
+}
+
 function init() {
-  // tabs
   for (const t of ['simple', 'deep', 'comp']) {
     $('tab-' + t).addEventListener('click', () => switchTab(t));
   }
   switchTab(state.tab || 'simple');
 
-  // theme
   applyTheme();
   $('themeBtn').addEventListener('click', () => {
     state.theme = state.theme === 'auto' ? 'light' : state.theme === 'light' ? 'dark' : 'auto';
     applyTheme(true); saveState();
   });
 
-  // simple
+  // ---- simple ----
   bindPair('s-annual', 's-annualRange',
     () => state.simple.annual, v => { state.simple.annual = v; },
     { minYen: 500000, maxYen: 100000000, onchange: () => { renderSimple(); saveState(); } });
@@ -1788,52 +2423,99 @@ function init() {
     renderSimple(); saveState();
   });
   $('s-toDeep').addEventListener('click', () => {
-    // 年収からざっくり月給へ引き継ぎ
+    // 年収とモデルプランをじっくりタブへ引き継ぎ
+    const d = state.deep;
     const m = state.simple.annual / (12 + state.simple.bonusMonths);
-    state.deep.monthly = Math.round(m / 5000) * 5000;
-    state.deep.bonusMonths = state.simple.bonusMonths;
-    $('d-monthly').value = round1(state.deep.monthly / 10000);
-    $('d-monthlyRange').value = clampN(state.deep.monthly, 150000, 600000);
-    setRangeFill($('d-monthlyRange'));
-    $('d-bonusR').value = state.deep.bonusMonths;
-    $('d-bonusVal').textContent = state.deep.bonusMonths + 'ヶ月分';
-    setRangeFill($('d-bonusR'));
+    d.payMode = 'monthly';
+    d.monthly = Math.round(m / 5000) * 5000;
+    d.bonusMonths = state.simple.bonusMonths;
+    const lp = renderSimple.lastPlan;
+    if (lp) {
+      d.housing.mode = 'rent';
+      d.housing.rentMode = 'fixed';
+      d.housing.rent = Math.round(lp.planVals.rent / 5000) * 5000;
+      const map = { food: 'food', util: 'util', comm: 'comm', social: 'social', cloth: 'cloth', other: 'other' };
+      for (const [lk, pk] of Object.entries(map)) {
+        d.living[lk].mode = 'fixed';
+        d.living[lk].amount = lp.planVals[pk];
+      }
+    }
+    renderDeepPayFields(); renderDeepHousingFields(); renderDeepLiving(); syncDeepInputs();
     switchTab('deep');
-    renderDeep(); saveState();
+    saveState();
     scrollTo({ top: 0 });
   });
 
-  // deep
-  bindPair('d-monthly', 'd-monthlyRange',
+  // ---- deep ----
+  applyDetailLevel();
+  syncFns.push(bindPair('d-monthly', 'd-monthlyRange',
     () => state.deep.monthly, v => { state.deep.monthly = v; },
-    { minYen: 100000, maxYen: 2000000, onchange: () => { renderDeep(); saveState(); } });
-  bindSliderVal('d-bonusR', 'd-bonusVal',
+    { minYen: 100000, maxYen: 5000000, onchange: () => { renderDeep(); saveState(); } }));
+  syncFns.push(bindSliderVal('d-bonusR', 'd-bonusVal',
     () => state.deep.bonusMonths, v => { state.deep.bonusMonths = v; },
-    v => v ? v + 'ヶ月分' : 'なし', () => { renderDeep(); saveState(); });
-  bindSliderVal('d-raiseR', 'd-raiseVal',
-    () => state.deep.raisePct, v => { state.deep.raisePct = v; },
-    v => v.toFixed(1) + '%', () => { renderDeep(); saveState(); });
-  bindSliderVal('d-otR', 'd-otVal',
+    v => v ? v + 'ヶ月分' : 'なし', () => { renderDeep(); saveState(); }));
+  syncFns.push(bindPair('d-annualBase', 'd-annualBaseRange',
+    () => state.deep.annualBase, v => { state.deep.annualBase = v; },
+    { minYen: 1000000, maxYen: 100000000, onchange: () => { renderDeepPayFields(); renderDeep(); saveState(); } }));
+  syncFns.push(bindPair('d-annualBonus', 'd-annualBonusRange',
+    () => state.deep.annualBonus, v => { state.deep.annualBonus = v; },
+    { minYen: 0, maxYen: 50000000, onchange: () => { renderDeepPayFields(); renderDeep(); saveState(); } }));
+  syncFns.push(bindSliderVal('d-raiseR', 'd-raiseVal',
+    () => state.deep.career.raisePct, v => { state.deep.career.raisePct = v; },
+    v => v.toFixed(1) + '%', () => { renderDeep(); saveState(); }));
+  syncFns.push(bindSliderVal('d-otR', 'd-otVal',
     () => state.deep.otH, v => { state.deep.otH = v; },
-    v => v + '時間', () => { renderDeep(); saveState(); });
+    v => v + '時間', () => { renderDeep(); saveState(); }));
   $('d-otmode').value = state.deep.otMode;
   $('d-otmode').addEventListener('change', () => { state.deep.otMode = $('d-otmode').value; renderDeep(); saveState(); });
-  bindSliderVal('d-yearsR', 'd-yearsVal',
+  syncFns.push(bindSliderVal('d-yearsR', 'd-yearsVal',
     () => state.deep.years, v => { state.deep.years = v; },
-    v => v + '年', () => { renderDeep(); saveState(); });
+    v => v + '年', () => { renderDeep(); saveState(); }));
   $('d-age').value = state.deep.age;
   $('d-age').addEventListener('input', () => {
     state.deep.age = clampN(Math.round(+$('d-age').value || 22), 18, 40);
     renderDeep(); saveState();
   });
+  $('d-firstYear').checked = state.deep.firstYearPartial;
+  $('d-firstYear').addEventListener('change', () => {
+    state.deep.firstYearPartial = $('d-firstYear').checked;
+    renderDeep(); saveState();
+  });
   $('d-addPromo').addEventListener('click', () => {
-    if (state.deep.promotions.length >= 5) return;
-    const used = state.deep.promotions.map(p => p.year);
+    if (state.deep.career.promotions.length >= 6) return;
+    const used = state.deep.career.promotions.map(p => p.year);
     let year = 3;
-    while (used.includes(year) && year < 20) year++;
-    state.deep.promotions.push({ year, amount: 30000, label: '' });
+    while (used.includes(year) && year < 30) year++;
+    state.deep.career.promotions.push({ year, amount: 30000, label: '' });
     renderDeepPromos(); renderDeep(); saveState();
   });
+  $('d-addAnchor').addEventListener('click', () => {
+    const anchors = state.deep.career.anchors;
+    if (anchors.length >= 8) return;
+    const lastA = anchors[anchors.length - 1];
+    const year = Math.min(30, (lastA ? lastA.year : 1) + 3);
+    const annual = lastA ? Math.round(lastA.annual * 1.3 / 100000) * 100000 : Math.round(deepPay(state.deep).firstAnnual * 1.2 / 100000) * 100000;
+    anchors.push({ year, annual });
+    renderDeepAnchors(); renderDeep(); saveState();
+  });
+  $('d-compare').checked = state.deep.compare;
+  $('d-compare').addEventListener('change', () => {
+    state.deep.compare = $('d-compare').checked;
+    renderDeep(); saveState();
+  });
+  $('d-scenTime').value = state.deep.scenTime;
+  $('d-scenTime').addEventListener('input', () => {
+    state.deep.scenTime = clampN(Math.round(+$('d-scenTime').value || 0), 0, 5);
+    renderDeep(); saveState();
+  });
+  $('d-scenMag').value = state.deep.scenMag;
+  $('d-scenMag').addEventListener('input', () => {
+    state.deep.scenMag = clampN(+$('d-scenMag').value || 0, 0, 50);
+    renderDeep(); saveState();
+  });
+  syncFns.push(bindSliderVal('d-inflR', 'd-inflVal',
+    () => state.deep.livingInflationPct, v => { state.deep.livingInflationPct = v; },
+    v => v.toFixed(1) + '%', () => { renderDeep(); saveState(); }));
   $('d-health').value = state.deep.healthRate;
   $('d-health').addEventListener('input', () => {
     state.deep.healthRate = clampN(+$('d-health').value || 9.91, 8, 12);
@@ -1844,17 +2526,41 @@ function init() {
     state.deep.ideco = clampN(+$('d-ideco').value || 0, 0, 7);
     renderDeep(); saveState();
   });
+  $('d-addOneoff').addEventListener('click', () => {
+    if (state.deep.oneOffs.length >= 12) return;
+    state.deep.oneOffs.push({ year: Math.min(state.deep.years, 2), amount: 300000, label: '' });
+    renderDeepOneoffs(); renderDeep(); saveState();
+  });
+  renderDeepPayFields();
+  renderDeepCareerFields();
   renderDeepHousingFields();
   renderDeepPromos();
+  renderDeepAnchors();
+  renderDeepOneoffs();
   renderDeepLiving();
 
-  // comp
-  bindSliderVal('c-rent', 'c-rentVal',
-    () => state.comp.rent, v => { state.comp.rent = v; },
-    v => fmtMan(v, 1), () => { renderCompResults(); saveState(); });
+  // ---- comp ----
+  const cRentNum = $('c-rentNum'), cRent = $('c-rent');
+  const syncCRent = () => {
+    cRentNum.value = round1(state.comp.rent / 10000);
+    cRent.value = clampN(state.comp.rent, +cRent.min, +cRent.max);
+    setRangeFill(cRent);
+  };
+  cRentNum.addEventListener('input', () => {
+    state.comp.rent = clampN((+cRentNum.value || 0) * 10000, 0, 1000000);
+    cRent.value = clampN(state.comp.rent, +cRent.min, +cRent.max);
+    setRangeFill(cRent);
+    renderCompResults(); saveState();
+  });
+  cRent.addEventListener('input', () => {
+    state.comp.rent = +cRent.value;
+    cRentNum.value = round1(state.comp.rent / 10000);
+    setRangeFill(cRent);
+    renderCompResults(); saveState();
+  });
+  syncCRent();
   renderCompCards();
 
-  // reset
   $('resetBtn').addEventListener('click', () => {
     if (confirm('入力内容をすべて初期値に戻します。よろしいですか?')) {
       localStorage.removeItem(STORAGE_KEY);
